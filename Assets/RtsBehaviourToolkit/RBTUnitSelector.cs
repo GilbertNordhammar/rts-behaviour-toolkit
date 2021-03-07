@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RBT_UnitSelector : MonoBehaviour
+public class RBTUnitSelector : MonoBehaviour
 {
     [SerializeField]
     Material _material;
