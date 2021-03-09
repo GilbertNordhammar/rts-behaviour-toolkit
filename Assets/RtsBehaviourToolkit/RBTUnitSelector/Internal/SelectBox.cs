@@ -67,8 +67,8 @@ namespace RtsBehaviourToolkit
 
             public bool IsWithinBox(Vector2 screenPos)
             {
-                return screenPos.x >= LowerLeft.x && screenPos.y >= LowerLeft.x
-                && screenPos.x <= UpperRight.x && screenPos.y < UpperRight.y;
+                return screenPos.x > LowerLeft.x && screenPos.y > LowerLeft.y
+                && screenPos.x < UpperRight.x && screenPos.y < UpperRight.y;
             }
         }
     }

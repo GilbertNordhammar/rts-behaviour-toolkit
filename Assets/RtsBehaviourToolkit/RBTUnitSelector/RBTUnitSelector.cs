@@ -34,10 +34,15 @@ namespace RtsBehaviourToolkit
 
                 foreach (var unit in RBTUnit.ActiveUnits)
                 {
-                    var unitScreenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
-                    Debug.Log(unitScreenPos);
-                    if (selectBox.IsWithinBox(unitScreenPos))
-                        Debug.Log("Unit within box");
+                    foreach (var point in unit.SelectablePoints)
+                    {
+                        var pointOnScreen = Camera.main.WorldToScreenPoint(point);
+                        if (selectBox.IsWithinBox(pointOnScreen))
+                        {
+                            Debug.Log("within box");
+                            break;
+                        }
+                    }
                 }
             }
         }
