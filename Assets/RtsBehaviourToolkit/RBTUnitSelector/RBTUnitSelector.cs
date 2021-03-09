@@ -2,34 +2,44 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public partial class RBTUnitSelector : MonoBehaviour
+namespace RtsBehaviourToolkit
 {
-    [SerializeField]
-    Material _material;
-
-    Vector2 _selectBoxStartCorner;
-
-    void Awake()
+    public partial class RBTUnitSelector : MonoBehaviour
     {
-        if (!_material)
-            Debug.LogError("Please Assign a material on the inspector");
-    }
+        [SerializeField]
+        Material _material;
+        Vector2 _selectBoxStartCorner;
 
-    void Update()
-    {
-        if (Input.GetMouseButtonDown(0))
+        void Awake()
         {
-            _selectBoxStartCorner = Input.mousePosition;
+            if (!_material)
+                Debug.LogError("Please Assign a material on the inspector");
         }
-    }
 
-    void OnPostRender()
-    {
-        if (Input.GetMouseButton(0))
+        void Update()
         {
-            var selectBox = new SelectBox(_selectBoxStartCorner, Input.mousePosition);
-            if (_material)
-                selectBox.Draw(_material);
+            if (Input.GetMouseButtonDown(0))
+            {
+                _selectBoxStartCorner = Input.mousePosition;
+            }
+        }
+
+        void OnPostRender()
+        {
+            if (Input.GetMouseButton(0))
+            {
+                var selectBox = new SelectBox(_selectBoxStartCorner, Input.mousePosition);
+                if (_material)
+                    selectBox.Draw(_material);
+
+                foreach (var unit in RBTUnit.ActiveUnits)
+                {
+                    var unitScreenPos = Camera.main.WorldToScreenPoint(unit.transform.position);
+                    Debug.Log(unitScreenPos);
+                    if (selectBox.IsWithinBox(unitScreenPos))
+                        Debug.Log("Unit within box");
+                }
+            }
         }
     }
 }
