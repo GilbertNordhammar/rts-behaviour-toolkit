@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,10 +10,72 @@ namespace RtsBehaviourToolkit
         // Editor fields
         public SelectableVolume selectableVolume;
 
-        // Public interface
+        // Public
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
-
         public Vector3[] SelectablePoints { get => selectableVolume.GetPoints(transform.position, transform.rotation); }
+        public bool Selected
+        {
+            get => _selected;
+            set
+            {
+                if (value != _selected)
+                {
+                    var evnt = new SelectionEvent() { sender = this };
+                    if (value)
+                        _onSelected.Invoke(evnt);
+                    else
+                        _onDeselected.Invoke(evnt);
+                }
+                _selected = value;
+            }
+        }
+        public event Action<SelectionEvent> OnSelected
+        {
+            add
+            {
+                lock (_onSelectedLock)
+                {
+                    _onSelected += value;
+                }
+            }
+            remove
+            {
+                lock (_onSelectedLock)
+                {
+                    _onSelected -= value;
+                }
+            }
+        }
+        public event Action<SelectionEvent> OnDeselected
+        {
+            add
+            {
+                lock (_onDeselectedLock)
+                {
+                    _onDeselected += value;
+                }
+            }
+            remove
+            {
+                lock (_onDeselectedLock)
+                {
+                    _onDeselected -= value;
+                }
+            }
+        }
+
+        public struct SelectionEvent
+        {
+            public RBTUnit sender;
+        }
+
+        // Private
+        bool _selected = false;
+        event Action<SelectionEvent> _onSelected = delegate { };
+        event Action<SelectionEvent> _onDeselected = delegate { };
+        readonly object _onSelectedLock = new object();
+        readonly object _onDeselectedLock = new object();
+
 
         // Unity functions
         private void OnEnable()
@@ -48,7 +111,6 @@ namespace RtsBehaviourToolkit
             Gizmos.DrawLine(p[6], p[4]);
 
             Gizmos.color = originalColor;
-
         }
     }
 }
