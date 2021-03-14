@@ -43,30 +43,27 @@ namespace RtsBehaviourToolkit
         // Private
         event Action<CommandGivenEvent> _onCommandGiven = delegate { };
         readonly object _onCommandGivenLock = new object();
-        bool _generatingCommandPosition;
-        Vector3 _commandMousePosition;
+        IEnumerator _currentCommand;
 
         void HandleSelectionEnd(RBTUnitSelector.SelectionEndEvent evnt)
         {
             Debug.Log("Units selected: " + evnt.selectedUnits.Count);
         }
 
-        void StartGeneratingCommandPositon()
+        IEnumerator CommandUnits(Vector3 mousePosition)
         {
-            _commandMousePosition = Input.mousePosition;
-            _generatingCommandPosition = true;
-        }
-
-        void GenerateCommandPosition()
-        {
-            var ray = Camera.main.ScreenPointToRay(_commandMousePosition);
+            var ray = Camera.main.ScreenPointToRay(mousePosition);
             var mask = LayerMask.GetMask("RBT Floor");
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, 100f, mask))
+            RaycastHit hit = new RaycastHit();
+            bool hasHit = false;
+            while (!hasHit)
             {
-                _onCommandGiven.Invoke(new CommandGivenEvent(this, hit.point));
-                _generatingCommandPosition = false;
-            }
+                hasHit = Physics.Raycast(ray, out hit, 100f, mask);
+                yield return new WaitForFixedUpdate();
+            };
+
+            _onCommandGiven.Invoke(new CommandGivenEvent(this, hit.point));
+            _currentCommand = null;
         }
 
         // Unity functions
@@ -99,14 +96,11 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
-            if (Input.GetMouseButtonDown(1) && !_generatingCommandPosition)
-                StartGeneratingCommandPositon();
-        }
-
-        void FixedUpdate()
-        {
-            if (_generatingCommandPosition)
-                GenerateCommandPosition();
+            if (Input.GetMouseButtonDown(1) && _currentCommand == null)
+            {
+                _currentCommand = CommandUnits(Input.mousePosition);
+                StartCoroutine(_currentCommand);
+            }
         }
     }
 }
