@@ -14,9 +14,9 @@ public class PositionDisplayer : MonoBehaviour
     {
         if (_positionMarker)
         {
-            Debug.Log("pos (post): " + evnt.position);
-            var marker = Instantiate(_positionMarker, evnt.position, _positionMarker.transform.rotation);
-            marker.transform.position = evnt.position;
+            Debug.Log("pos (post): " + evnt.Position);
+            var marker = Instantiate(_positionMarker, evnt.Position, _positionMarker.transform.rotation);
+            marker.transform.position = evnt.Position;
         }
     }
 
