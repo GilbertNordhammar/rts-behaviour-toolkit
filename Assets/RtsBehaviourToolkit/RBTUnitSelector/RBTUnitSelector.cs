@@ -12,43 +12,78 @@ namespace RtsBehaviourToolkit
         Material _material;
 
         // Public
-        public event Action<UnitsSelectedEvent> OnUnitsSelected
+        public event Action<SelectionEndEvent> OnSelectionEnd
         {
             add
             {
                 lock (_onUnitsSelectedLock)
                 {
-                    _onUnitsSelected += value;
+                    _onSelectionEnd += value;
                 }
             }
             remove
             {
                 lock (_onUnitsSelectedLock)
                 {
-                    _onUnitsSelected -= value;
+                    _onSelectionEnd -= value;
                 }
             }
         }
 
-        public struct UnitsSelectedEvent
+        public struct SelectionEndEvent
         {
-            public UnitsSelectedEvent(RBTUnitSelector sender, List<RBTUnit> units)
+            public SelectionEndEvent(RBTUnitSelector sender, List<RBTUnit> units)
             {
                 this.sender = sender;
-                this.units = units;
+                this.selectedUnits = units;
             }
-            readonly public RBTUnitSelector sender;
-            readonly public List<RBTUnit> units;
+            public readonly RBTUnitSelector sender;
+            public readonly List<RBTUnit> selectedUnits;
         }
+
+        public static RBTUnitSelector Instance { get; private set; }
 
         // Private
         Vector2 _selectBoxStartCorner;
-        event Action<UnitsSelectedEvent> _onUnitsSelected = delegate { };
+        event Action<SelectionEndEvent> _onSelectionEnd = delegate { };
         readonly object _onUnitsSelectedLock = new object();
+        List<RBTUnit> _selectedUnits = new List<RBTUnit>();
+
+        void SelectUnits(SelectBox selectBox)
+        {
+            _selectedUnits.Clear();
+            foreach (var unit in RBTUnit.ActiveUnits)
+            {
+                bool selected = false;
+                foreach (var point in unit.SelectablePoints)
+                {
+                    var pointOnScreen = Camera.main.WorldToScreenPoint(point);
+                    selected = selectBox.IsWithinBox(pointOnScreen);
+                    if (selected)
+                    {
+                        _selectedUnits.Add(unit);
+                        break;
+                    }
+                }
+                unit.Selected = selected;
+            }
+        }
 
         // Unity functions
+        void OnValidate()
+        {
+            if (Instance)
+            {
+                Debug.LogWarning($"RBTUnitSelector on '{gameObject.name}' was destroyed as there's already one attached on '{Instance.gameObject.name}'");
+                UnityEditor.EditorApplication.delayCall += () => DestroyImmediate(this);
+            }
+            else Instance = this;
+        }
+
         void Awake()
         {
+            Instance = this;
+
             if (!_material)
                 Debug.LogError("Please assign a material in the inspector");
         }
@@ -56,39 +91,22 @@ namespace RtsBehaviourToolkit
         void Update()
         {
             if (Input.GetMouseButtonDown(0))
-            {
                 _selectBoxStartCorner = Input.mousePosition;
-            }
+            else if (Input.GetMouseButtonUp(0))
+                _onSelectionEnd.Invoke(new SelectionEndEvent(this, _selectedUnits));
         }
 
         void OnPostRender()
         {
-            if (Input.GetMouseButton(0))
-            {
-                var selectBox = new SelectBox(_selectBoxStartCorner, Input.mousePosition);
-                if (_material)
-                    selectBox.Draw(_material);
+            if (!Input.GetMouseButton(0))
+                return;
 
-                var selectedUnits = new List<RBTUnit>();
-                foreach (var unit in RBTUnit.ActiveUnits)
-                {
-                    bool selected = false;
-                    foreach (var point in unit.SelectablePoints)
-                    {
-                        var pointOnScreen = Camera.main.WorldToScreenPoint(point);
-                        selected = selectBox.IsWithinBox(pointOnScreen);
-                        if (selected)
-                        {
-                            selectedUnits.Add(unit);
-                            break;
-                        }
-                    }
-                    unit.Selected = selected;
-                }
+            var selectBox = new SelectBox(_selectBoxStartCorner, Input.mousePosition);
 
-                if (selectedUnits.Count > 0)
-                    _onUnitsSelected.Invoke(new UnitsSelectedEvent(this, selectedUnits));
-            }
+            if (_material)
+                selectBox.Draw(_material);
+
+            SelectUnits(selectBox);
         }
     }
 }
