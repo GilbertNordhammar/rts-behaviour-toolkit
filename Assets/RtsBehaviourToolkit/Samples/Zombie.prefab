@@ -98,9 +98,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79658ffa239bab74298fe4b4d9ffd51c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  selectableVolume:
-    _size: {x: 0.66, y: 1.86, z: 0.67}
-    _offset: {x: 0, y: 0.9, z: 0}
+  _speed: 5
+  _selectableVolume:
+    _size: {x: 0, y: 0, z: 0}
+    _offset: {x: 0, y: 0, z: 0}
 --- !u!1 &1068519158798810
 GameObject:
   m_ObjectHideFlags: 0

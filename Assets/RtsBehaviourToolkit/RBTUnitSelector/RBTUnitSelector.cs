@@ -70,19 +70,15 @@ namespace RtsBehaviourToolkit
         }
 
         // Unity functions
-        void OnValidate()
+        void Awake()
         {
             if (Instance)
             {
                 Debug.LogWarning($"RBTUnitSelector on '{gameObject.name}' was destroyed as there's already one attached on '{Instance.gameObject.name}'");
-                UnityEditor.EditorApplication.delayCall += () => DestroyImmediate(this);
+                Destroy(this);
+                return;
             }
             else Instance = this;
-        }
-
-        void Awake()
-        {
-            Instance = this;
 
             if (!_material)
                 Debug.LogError("Please assign a material in the inspector");

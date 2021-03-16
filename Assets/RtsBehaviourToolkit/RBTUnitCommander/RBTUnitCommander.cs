@@ -23,13 +23,12 @@ namespace RtsBehaviourToolkit
             {
                 Sender = sender;
                 Position = position;
-                Group = new CommandGroup(units);
+                Units = units;
             }
 
             public readonly RBTUnitCommander Sender;
             public readonly Vector3 Position;
-            public readonly CommandGroup Group;
-
+            public readonly List<RBTUnit> Units;
         }
 
         public event Action<CommandGivenEvent> OnCommandGiven
@@ -81,32 +80,25 @@ namespace RtsBehaviourToolkit
             _currentCommand = null;
         }
 
-        RBTUnitCommander()
-        {
-            if (!Instance)
-                Instance = this;
-        }
-
-        ~RBTUnitCommander()
-        {
-            if (Instance == this)
-                Instance = null;
-        }
-
         // Unity functions
-        void OnValidate()
-        {
-            if (Instance && Instance != this)
-            {
-                Debug.LogWarning($"RBTUnitCommander on '{gameObject.name}' was destroyed as there's already one attached on '{Instance.gameObject.name}'");
-                UnityEditor.EditorApplication.delayCall += () => DestroyImmediate(this);
-            }
-        }
-
         void Awake()
         {
+            if (Instance)
+            {
+                Debug.LogWarning($"RBTUnitCommander on '{gameObject.name}' was destroyed as there's already one attached on '{Instance.gameObject.name}'");
+                Destroy(this);
+                return;
+            }
+            else Instance = this;
+
             if (_walkable == 0)
                 Debug.LogWarning("Units can't be commanded since 'Walkable' is set to 'Nothing'");
+        }
+
+        void Start()
+        {
+            if (RBTUnitSelector.Instance)
+                RBTUnitSelector.Instance.OnSelectionEnd += HandleSelectionEnd;
         }
 
         void OnEnable()

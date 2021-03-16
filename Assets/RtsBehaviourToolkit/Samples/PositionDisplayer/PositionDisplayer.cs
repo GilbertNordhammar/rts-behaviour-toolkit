@@ -36,6 +36,12 @@ public class PositionDisplayer : MonoBehaviour
     }
 
     // Unity functions
+    void Start()
+    {
+        if (RBTUnitCommander.Instance)
+            RBTUnitCommander.Instance.OnCommandGiven += HandleCommandGiven;
+    }
+
     void OnEnable()
     {
         if (RBTUnitCommander.Instance)

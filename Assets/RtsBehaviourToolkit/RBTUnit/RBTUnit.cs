@@ -5,14 +5,28 @@ using UnityEngine;
 
 namespace RtsBehaviourToolkit
 {
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(CapsuleCollider))]
     public partial class RBTUnit : MonoBehaviour
     {
         // Editor fields
-        public SelectableVolume selectableVolume;
+        [SerializeField]
+        [Min(0)]
+        float _speed = 2.0f;
+        [SerializeField]
+        SelectableVolume _selectableVolume;
 
         // Public
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
-        public Vector3[] SelectablePoints { get => selectableVolume.GetPoints(transform.position, transform.rotation); }
+        public Vector3[] SelectablePoints { get => _selectableVolume.GetPoints(transform.position, transform.rotation); }
+
+        public void AddMovement(Vector3 movement)
+        {
+            _movement += movement;
+        }
+
+        public float Height { get => _collider.height; }
+
         public bool Selected
         {
             get => _selected;
@@ -29,6 +43,7 @@ namespace RtsBehaviourToolkit
                 _selected = value;
             }
         }
+
         public event Action<SelectionEvent> OnSelected
         {
             add
@@ -46,6 +61,7 @@ namespace RtsBehaviourToolkit
                 }
             }
         }
+
         public event Action<SelectionEvent> OnDeselected
         {
             add
@@ -75,20 +91,45 @@ namespace RtsBehaviourToolkit
         event Action<SelectionEvent> _onDeselected = delegate { };
         readonly object _onSelectedLock = new object();
         readonly object _onDeselectedLock = new object();
-
+        Rigidbody _rigidBody;
+        Vector3 _movement;
+        CapsuleCollider _collider;
 
         // Unity functions
-        private void OnEnable()
+        void Awake()
+        {
+            _rigidBody = GetComponent<Rigidbody>();
+            _collider = GetComponent<CapsuleCollider>();
+        }
+
+        void FixedUpdate()
+        {
+            var movement = _movement.normalized * _speed;
+            // _rigidBody.AddForce(movement);
+            _rigidBody.velocity = movement;
+            _movement = Vector3.zero;
+        }
+
+        private void Update()
+        {
+            if (_rigidBody.velocity.magnitude > 0.1f)
+            {
+                transform.LookAt(transform.position + _rigidBody.velocity.normalized);
+            }
+        }
+
+        // Unity Editor functions
+        void OnEnable()
         {
             ActiveUnits.Add(this);
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
             ActiveUnits.Remove(this);
         }
 
-        private void OnDrawGizmosSelected()
+        void OnDrawGizmosSelected()
         {
             var originalColor = Gizmos.color;
             Gizmos.color = Color.white;
