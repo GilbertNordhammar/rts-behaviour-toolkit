@@ -52,7 +52,6 @@ namespace RtsBehaviourToolkit
         // Private
         event Action<CommandGivenEvent> _onCommandGiven = delegate { };
         readonly object _onCommandGivenLock = new object();
-        IEnumerator _currentCommand;
         List<RBTUnit> _selectedUnits = new List<RBTUnit>();
 
         void HandleSelectionEnd(RBTUnitSelector.SelectionEndEvent evnt)
@@ -60,24 +59,20 @@ namespace RtsBehaviourToolkit
             _selectedUnits = evnt.selectedUnits;
         }
 
-        IEnumerator CommandUnits(Vector3 mousePosition, List<RBTUnit> units)
+        void CommandUnits(Vector3 mousePosition, List<RBTUnit> units)
         {
             var ray = Camera.main.ScreenPointToRay(mousePosition);
             var mask = _walkable | _blockingTerrain;
-
             RaycastHit hit = new RaycastHit();
-            bool hasHit = false;
-            while (!hasHit)
-            {
-                hasHit = Physics.Raycast(ray, out hit, 100f, mask);
-                yield return new WaitForFixedUpdate();
-            };
+            bool clickOnWalkableSurface = Physics.Raycast(ray, out hit, 100f, mask);
 
-            var hitLayer = hit.collider.gameObject.layer;
-            var isWalkable = _walkable == (_walkable | (1 << hitLayer));
-            if (isWalkable)
-                _onCommandGiven.Invoke(new CommandGivenEvent(this, hit.point, units));
-            _currentCommand = null;
+            if (clickOnWalkableSurface)
+            {
+                var hitLayer = hit.collider.gameObject.layer;
+                var isWalkable = _walkable == (_walkable | (1 << hitLayer));
+                if (isWalkable)
+                    _onCommandGiven.Invoke(new CommandGivenEvent(this, hit.point, units));
+            }
         }
 
         // Unity functions
@@ -115,10 +110,9 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
-            if (Input.GetMouseButtonDown(1) && _currentCommand == null && _selectedUnits.Count > 0)
+            if (Input.GetMouseButtonDown(1) && _selectedUnits.Count > 0)
             {
-                _currentCommand = CommandUnits(Input.mousePosition, _selectedUnits);
-                StartCoroutine(_currentCommand);
+                CommandUnits(Input.mousePosition, _selectedUnits);
             }
         }
     }
