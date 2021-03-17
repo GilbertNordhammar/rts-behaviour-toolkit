@@ -22,7 +22,7 @@ namespace RtsBehaviourToolkit
 
         public void AddMovement(Vector3 movement)
         {
-            _movement += movement;
+            _movementSum += movement;
         }
 
         public float Height { get => _collider.height; }
@@ -92,7 +92,7 @@ namespace RtsBehaviourToolkit
         readonly object _onSelectedLock = new object();
         readonly object _onDeselectedLock = new object();
         Rigidbody _rigidBody;
-        Vector3 _movement;
+        Vector3 _movementSum;
         CapsuleCollider _collider;
 
         // Unity functions
@@ -104,21 +104,71 @@ namespace RtsBehaviourToolkit
 
         void FixedUpdate()
         {
-            var movement = _movement.normalized * _speed;
-            // _rigidBody.AddForce(movement);
-            _rigidBody.velocity = movement;
-            _movement = Vector3.zero;
+            // disbling physics when unit hasn't been set to move
+            if (_movementSum == Vector3.zero)
+            {
+                _rigidBody.isKinematic = true;
+                return;
+            }
+            _rigidBody.isKinematic = false;
+
+            // Calculationg adjusted movement (i.e. making it parallell to unit's up vector)
+            var movement = _movementSum.normalized * _speed;
+
+            var diffAngle = Vector3.Angle(transform.up, movement) - 90f;
+            movement = Quaternion.AngleAxis(-diffAngle, transform.right) * movement;
+            var postDiff = Vector3.Angle(transform.up, movement) - 90f;
+
+            _rigidBody.velocity = new Vector3(movement.x, _rigidBody.velocity.y + movement.y, movement.z);
+
+            // Snapping unit to floor
+            var walkableMask = LayerMask.GetMask(new string[] { "RBT Floor" });
+            RaycastHit hit = new RaycastHit();
+            if (Physics.Raycast(transform.position + _rigidBody.velocity * Time.fixedDeltaTime, -Vector3.up, out hit, 1, walkableMask))
+            {
+                _rigidBody.position = hit.point;
+            }
+
+            // reset movement until next update
+            _movementSum = Vector3.zero;
         }
 
         private void Update()
         {
             if (_rigidBody.velocity.magnitude > 0.1f)
             {
-                transform.LookAt(transform.position + _rigidBody.velocity.normalized);
+                // Have this calculation in FixedUpdate() aswell so that transform.up always gets updated
+                // before movement vector is adjuted;
+                var lookDirection = _rigidBody.velocity.normalized;
+                lookDirection.y = 0;
+                transform.LookAt(transform.position + lookDirection);
             }
         }
 
-        // Unity Editor functions
+        /*
+            attempting to make unit snap to surface
+            https://gamedev.stackexchange.com/questions/89693/how-could-i-constrain-player-movement-to-the-surface-of-a-3d-object-using-unity
+        */
+        // void OnCollisionExit(Collision other)
+        // {
+        //     var walkableMask = LayerMask.GetMask(new string[] { "RBT Floor" });
+        //     var otherLayer = other.gameObject.layer;
+
+        //     var leftWalkableSurface = walkableMask == (walkableMask | (1 << otherLayer));
+        //     if (leftWalkableSurface)
+        //     {
+        //         Debug.Log("Left floor");
+        //         RaycastHit hit = new RaycastHit();
+        //         if (Physics.Raycast(transform.position, -Vector3.up, out hit, 100, walkableMask))
+        //         {
+        //             Debug.Log("ray hit");
+        //             var targetRotation = Quaternion.FromToRotation(transform.up, hit.normal);
+        //             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, float.PositiveInfinity);
+        //             _rigidBody.position = hit.point;
+        //         }
+        //     }
+        // }
+
         void OnEnable()
         {
             ActiveUnits.Add(this);
@@ -129,6 +179,7 @@ namespace RtsBehaviourToolkit
             ActiveUnits.Remove(this);
         }
 
+        // Unity Editor functions
         void OnDrawGizmosSelected()
         {
             var originalColor = Gizmos.color;

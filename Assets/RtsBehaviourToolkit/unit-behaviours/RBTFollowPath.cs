@@ -10,7 +10,7 @@ namespace RtsBehaviourToolkit
         {
             foreach (var unit in group.CommandUnits)
             {
-                var direction = (unit.GetNextCorner - unit.Unit.transform.position);
+                var direction = unit.OffsetToNextCorner.normalized;
                 unit.Unit.AddMovement(direction);
             }
         }

@@ -58,9 +58,6 @@ namespace RtsBehaviourToolkit
                     var unitsToRemove = new List<CommandUnit>();
                     foreach (var unit in commandGroup.CommandUnits)
                     {
-                        if (unit.DistToNextCorner < 1.0f) // base this on unit height or something
-                            unit.IncrementCorner();
-
                         if (unit.HasTraversedPath)
                             unitsToRemove.Add(unit);
                     }

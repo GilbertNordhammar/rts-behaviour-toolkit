@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,35 +19,44 @@ namespace RtsBehaviourToolkit
         public RBTUnit Unit { get; set; }
         public NavMeshPath Path { get; set; }
 
-        public Vector3 GetNextCorner
+        public Vector3 NextCorner
         {
-            get => Path.corners[NextCornerIndex];
+            get
+            {
+                return Path.corners[NextCornerIndex];
+            }
+        }
+
+        public Vector3 OffsetToNextCorner
+        {
+            get => Path.corners[NextCornerIndex] - Unit.transform.position;
         }
 
         public float DistToNextCorner
         {
-            get
-            {
-                var nextCornerPos = Path.corners[NextCornerIndex];
-                var unitPos = Unit.transform.position;
-                return Vector3.Distance(nextCornerPos, unitPos);
-            }
-        }
-
-        public void IncrementCorner()
-        {
-            _indexNextCorner++;
+            get => Vector3.Distance(Path.corners[NextCornerIndex], Unit.transform.position);
         }
 
         public int NextCornerIndex
         {
-            get => Mathf.Min(_indexNextCorner, Path.corners.Length - 1);
+            get
+            {
+                var absOffset = Path.corners[_indexNextCorner] - Unit.transform.position;
+                absOffset = new Vector3(Mathf.Abs(absOffset.x), Mathf.Abs(absOffset.y), Mathf.Abs(absOffset.z));
+                if (absOffset.x < 0.1 && absOffset.z < 0.1 && absOffset.y < 1.0) // base absOffset.y < 1.0 off of unit height 
+                {
+                    _indexNextCorner++;
+                    if (_indexNextCorner >= Path.corners.Length)
+                    {
+                        _indexNextCorner = Path.corners.Length - 1;
+                        HasTraversedPath = true;
+                    }
+                }
+                return _indexNextCorner;
+            }
         }
 
-        public bool HasTraversedPath
-        {
-            get => _indexNextCorner >= Path.corners.Length;
-        }
+        public bool HasTraversedPath { get; private set; }
 
         // Private
         private int _indexNextCorner = 0;
