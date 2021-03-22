@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 54154426797751860}
   - component: {fileID: 136556560477939886}
   - component: {fileID: 37602496}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Zombie
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -70,7 +70,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 112
+  m_Constraints: 0
   m_CollisionDetection: 0
 --- !u!136 &136556560477939886
 CapsuleCollider:
@@ -79,7 +79,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1054316519946356}
-  m_Material: {fileID: 13400000, guid: 4131cecd9c0ee834c98751ea5a05abd5, type: 2}
+  m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
   m_Radius: 0.28
@@ -100,8 +100,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _speed: 5
   _selectableVolume:
-    _size: {x: 0, y: 0, z: 0}
-    _offset: {x: 0, y: 0, z: 0}
+    _size: {x: 0.84, y: 1.86, z: 0.66}
+    _offset: {x: 0, y: 0.86, z: 0}
 --- !u!1 &1068519158798810
 GameObject:
   m_ObjectHideFlags: 0
@@ -2409,7 +2409,7 @@ PrefabInstance:
     - target: {fileID: 7878734002718093042, guid: f01807464b7c8844da292e1d41c4051d,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.004
+      value: 0.07
       objectReference: {fileID: 0}
     - target: {fileID: 7878734002718093042, guid: f01807464b7c8844da292e1d41c4051d,
         type: 3}

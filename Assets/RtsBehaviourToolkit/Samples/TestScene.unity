@@ -373,10 +373,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Zombie (1)
       objectReference: {fileID: 0}
-    - target: {fileID: 1054316519946356, guid: b2988707ec07ef8448079d2c9f25d850, type: 3}
-      propertyPath: m_Layer
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4164744488945498, guid: b2988707ec07ef8448079d2c9f25d850, type: 3}
       propertyPath: m_RootOrder
       value: 3
@@ -420,11 +416,6 @@ PrefabInstance:
     - target: {fileID: 4164744488945498, guid: b2988707ec07ef8448079d2c9f25d850, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 136556560477939886, guid: b2988707ec07ef8448079d2c9f25d850,
-        type: 3}
-      propertyPath: m_Material
-      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b2988707ec07ef8448079d2c9f25d850, type: 3}
@@ -875,7 +866,7 @@ Transform:
   m_GameObject: {fileID: 1628805187}
   m_LocalRotation: {x: 0.29883623, y: 0.64085644, z: -0.29883623, w: 0.64085644}
   m_LocalPosition: {x: 4.85, y: 0.79, z: 2.18}
-  m_LocalScale: {x: -3.052756, y: 3.7842922, z: 0.7034}
+  m_LocalScale: {x: -3.052756, y: 7.582492, z: 0.7034}
   m_Children: []
   m_Father: {fileID: 1379308564}
   m_RootOrder: 1
@@ -969,7 +960,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1978107086}
   m_LocalRotation: {x: 0.5, y: 0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: 7.98, y: 1.86, z: 2.18}
+  m_LocalPosition: {x: 9.44, y: 3.19, z: 2.18}
   m_LocalScale: {x: -3.052756, y: 3.7842922, z: 0.7034}
   m_Children: []
   m_Father: {fileID: 1379308564}
