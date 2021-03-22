@@ -20,18 +20,41 @@ namespace RtsBehaviourToolkit
 
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
-            _commandGroups.Clear();
-            var randIndex = Random.Range(0, evnt.Units.Count);
-            var leader = evnt.Units[randIndex];
-            var commandGroup = new CommandGroup() { Leader = leader };
-            commandGroup.CommandUnits = new List<CommandUnit>();
+            var commandUnits = new List<CommandUnit>();
             foreach (var unit in evnt.Units)
             {
                 var path = new NavMeshPath();
                 NavMesh.CalculatePath(unit.transform.position, evnt.Position, NavMesh.AllAreas, path);
-                commandGroup.CommandUnits.Add(new CommandUnit() { Unit = unit, Path = path });
+                commandUnits.Add(new CommandUnit(unit, path));
             }
-            _commandGroups.Add(commandGroup);
+
+            var randIndex = Random.Range(0, evnt.Units.Count);
+            var leader = evnt.Units[randIndex];
+
+            _commandGroups.Add(new CommandGroup(commandUnits, leader));
+        }
+
+        void UpdateCommandGroups()
+        {
+            var commandGroupsToRemove = new List<CommandGroup>();
+            foreach (var commandGroup in _commandGroups)
+            {
+                var unitsToRemove = new List<CommandUnit>();
+                foreach (var unit in commandGroup.CommandUnits)
+                {
+                    if (unit.HasTraversedPath || unit.Unit.CommandGroupId != commandGroup.Id)
+                        unitsToRemove.Add(unit);
+                }
+
+                foreach (var unit in unitsToRemove)
+                    commandGroup.CommandUnits.Remove(unit);
+
+                if (commandGroup.CommandUnits.Count == 0)
+                    commandGroupsToRemove.Add(commandGroup);
+            }
+
+            foreach (var group in commandGroupsToRemove)
+                _commandGroups.Remove(group);
         }
 
         // Unity functions
@@ -46,26 +69,16 @@ namespace RtsBehaviourToolkit
             else Instance = this;
 
             _unitBehaviours = GetComponentsInChildren<RBTUnitBehaviour>().ToList();
-            Debug.Log("Behaviours: " + _unitBehaviours.Count);
         }
 
         void FixedUpdate()
         {
+            UpdateCommandGroups();
+
             foreach (var behaviour in _unitBehaviours)
             {
                 foreach (var commandGroup in _commandGroups)
-                {
-                    var unitsToRemove = new List<CommandUnit>();
-                    foreach (var unit in commandGroup.CommandUnits)
-                    {
-                        if (unit.HasTraversedPath)
-                            unitsToRemove.Add(unit);
-                    }
-                    foreach (var unit in unitsToRemove)
-                        commandGroup.CommandUnits.Remove(unit);
-
                     behaviour.Execute(commandGroup);
-                }
             }
         }
 
@@ -74,18 +87,8 @@ namespace RtsBehaviourToolkit
         {
             if (RBTUnitCommander.Instance)
                 RBTUnitCommander.Instance.OnCommandGiven += HandleOnCommandGiven;
-        }
-
-        void OnEnable()
-        {
-            if (RBTUnitCommander.Instance)
-                RBTUnitCommander.Instance.OnCommandGiven += HandleOnCommandGiven;
-        }
-
-        void OnDisable()
-        {
-            if (RBTUnitCommander.Instance)
-                RBTUnitCommander.Instance.OnCommandGiven -= HandleOnCommandGiven;
+            else
+                Debug.LogError("RBTUnitCommander couldn't subscribe to RBTUnitCommander.Instance.OnCommandGiven");
         }
 
         void OnDrawGizmos()

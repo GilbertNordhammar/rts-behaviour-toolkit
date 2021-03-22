@@ -8,16 +8,31 @@ namespace RtsBehaviourToolkit
 {
     public class CommandGroup
     {
+        public CommandGroup(List<CommandUnit> units, RBTUnit leader)
+        {
+            Leader = leader;
+            CommandUnits = units;
+
+            foreach (var unit in units)
+                unit.Unit.CommandGroupId = Id;
+        }
+
         public string Id { get; } = System.Guid.NewGuid().ToString();
-        public RBTUnit Leader { get; set; }
-        public List<CommandUnit> CommandUnits { get; set; }
+        public RBTUnit Leader { get; }
+        public List<CommandUnit> CommandUnits { get; }
     }
 
     public class CommandUnit
     {
         // Public
-        public RBTUnit Unit { get; set; }
-        public NavMeshPath Path { get; set; }
+        public CommandUnit(RBTUnit unit, NavMeshPath path)
+        {
+            Unit = unit;
+            Path = path;
+        }
+        public RBTUnit Unit { get; }
+
+        public NavMeshPath Path { get; }
 
         public Vector3 NextCorner
         {

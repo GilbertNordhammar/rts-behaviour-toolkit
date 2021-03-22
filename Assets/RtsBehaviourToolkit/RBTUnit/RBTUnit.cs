@@ -20,12 +20,7 @@ namespace RtsBehaviourToolkit
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
         public Vector3[] SelectablePoints { get => _selectableVolume.GetPoints(transform.position, transform.rotation); }
 
-        public void AddMovement(Vector3 movement)
-        {
-            _movementSum += movement;
-        }
-
-        public float Height { get => _collider.height; }
+        public string CommandGroupId { get; set; }
 
         public bool Selected
         {
@@ -83,6 +78,10 @@ namespace RtsBehaviourToolkit
         public struct SelectionEvent
         {
             public RBTUnit sender;
+        }
+        public void AddMovement(Vector3 movement)
+        {
+            _movementSum += movement;
         }
 
         // Private
@@ -142,7 +141,7 @@ namespace RtsBehaviourToolkit
             _rigidBody.velocity = movement;
 
             // Debug
-            Debug.Log(_rigidBody.velocity.magnitude);
+            // Debug.Log(_rigidBody.velocity.magnitude);
             Debug.DrawRay(transform.position, movement * 5, Color.red);
             Debug.DrawRay(transform.position, _movementSum.normalized * 4, Color.white);
             Debug.DrawRay(transform.position, surfaceNormal * 4, Color.green);

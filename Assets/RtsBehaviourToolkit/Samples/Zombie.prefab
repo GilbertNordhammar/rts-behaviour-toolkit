@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79658ffa239bab74298fe4b4d9ffd51c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _speed: 5
+  _speed: 2
   _selectableVolume:
     _size: {x: 0.84, y: 1.86, z: 0.66}
     _offset: {x: 0, y: 0.86, z: 0}
