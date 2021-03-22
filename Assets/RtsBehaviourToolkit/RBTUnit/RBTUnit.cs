@@ -98,6 +98,7 @@ namespace RtsBehaviourToolkit
         void SetLookDirection()
         {
             if (_rigidBody.velocity.magnitude < 0.1f) return;
+
             var lookDirection = _rigidBody.velocity.normalized;
             lookDirection.y = 0;
             transform.LookAt(transform.position + lookDirection);
@@ -122,13 +123,12 @@ namespace RtsBehaviourToolkit
 
             // Snapping unit to floor and setting surface normal
             var surfaceNormal = new Vector3();
-            var walkableMask = LayerMask.GetMask(new string[] { "RBT Floor" });
             RaycastHit hit = new RaycastHit();
-            if (Physics.Raycast(transform.position + _rigidBody.velocity * Time.fixedDeltaTime, -Vector3.up, out hit, 1, walkableMask))
+            if (Physics.Raycast(transform.position + _rigidBody.velocity * Time.fixedDeltaTime, -Vector3.up, out hit, 1, RBTConfig.WalkableMask))
             {
                 surfaceNormal = hit.normal;
                 _rigidBody.position = hit.point;
-                _rigidBody.position += new Vector3(0, 0.1f, 0);
+                _rigidBody.position += new Vector3(0, 0.2f, 0);
             }
 
             SetLookDirection();

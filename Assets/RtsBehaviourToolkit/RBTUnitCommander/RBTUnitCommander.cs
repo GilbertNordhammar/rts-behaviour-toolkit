@@ -7,13 +7,6 @@ namespace RtsBehaviourToolkit
 {
     public class RBTUnitCommander : MonoBehaviour
     {
-        // Unity editor
-        [SerializeField]
-        LayerMask _walkable;
-
-        [SerializeField]
-        LayerMask _blockingTerrain;
-
         // Public
         public static RBTUnitCommander Instance { get; private set; }
 
@@ -62,14 +55,14 @@ namespace RtsBehaviourToolkit
         void CommandUnits(Vector3 mousePosition, List<RBTUnit> units)
         {
             var ray = Camera.main.ScreenPointToRay(mousePosition);
-            var mask = _walkable | _blockingTerrain;
+            var mask = RBTConfig.WalkableMask | RBTConfig.TerrainMask;
             RaycastHit hit = new RaycastHit();
             bool clickOnWalkableSurface = Physics.Raycast(ray, out hit, 100f, mask);
 
             if (clickOnWalkableSurface)
             {
                 var hitLayer = hit.collider.gameObject.layer;
-                var isWalkable = _walkable == (_walkable | (1 << hitLayer));
+                var isWalkable = RBTConfig.WalkableMask == (RBTConfig.WalkableMask | (1 << hitLayer));
                 if (isWalkable)
                     _onCommandGiven.Invoke(new CommandGivenEvent(this, hit.point, units));
             }
@@ -86,7 +79,7 @@ namespace RtsBehaviourToolkit
             }
             else Instance = this;
 
-            if (_walkable == 0)
+            if (RBTConfig.WalkableMask == 0)
                 Debug.LogWarning("Units can't be commanded since 'Walkable' is set to 'Nothing'");
         }
 
