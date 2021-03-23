@@ -78,27 +78,15 @@ namespace RtsBehaviourToolkit
                 return;
             }
             else Instance = this;
-
-            if (RBTConfig.WalkableMask == 0)
-                Debug.LogWarning("Units can't be commanded since 'Walkable' is set to 'Nothing'");
         }
 
         void Start()
         {
             if (RBTUnitSelector.Instance)
                 RBTUnitSelector.Instance.OnSelectionEnd += HandleSelectionEnd;
-        }
 
-        void OnEnable()
-        {
-            if (RBTUnitSelector.Instance)
-                RBTUnitSelector.Instance.OnSelectionEnd += HandleSelectionEnd;
-        }
-
-        void OnDisable()
-        {
-            if (RBTUnitSelector.Instance)
-                RBTUnitSelector.Instance.OnSelectionEnd -= HandleSelectionEnd;
+            if (RBTConfig.WalkableMask == 0)
+                Debug.LogWarning("Units can't be commanded since 'WalkableMask' is set to 'Nothing'");
         }
 
         void Update()
