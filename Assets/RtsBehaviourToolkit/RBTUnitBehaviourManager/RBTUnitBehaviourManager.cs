@@ -10,6 +10,14 @@ namespace RtsBehaviourToolkit
     public partial class RBTUnitBehaviourManager : MonoBehaviour
     {
         // Unity editor
+        [SerializeField]
+        [Min(0f)]
+        float _subgroupDistance = 2f;
+        [SerializeField]
+        UnitGrid _unitGrid;
+
+        [SerializeField]
+        RBTUnit _testUnit;
 
         // Public
         public static RBTUnitBehaviourManager Instance { get; private set; }
@@ -20,6 +28,8 @@ namespace RtsBehaviourToolkit
 
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
+            // TODO: Offset target positions according to leader
+
             var commandUnits = new List<CommandUnit>();
             foreach (var unit in evnt.Units)
             {
@@ -28,10 +38,7 @@ namespace RtsBehaviourToolkit
                 commandUnits.Add(new CommandUnit(unit, path));
             }
 
-            var randIndex = Random.Range(0, evnt.Units.Count);
-            var leader = evnt.Units[randIndex];
-
-            _commandGroups.Add(new CommandGroup(commandUnits, leader));
+            _commandGroups.Add(new CommandGroup(commandUnits, _subgroupDistance));
         }
 
         void UpdateCommandGroups()
@@ -40,21 +47,27 @@ namespace RtsBehaviourToolkit
             foreach (var commandGroup in _commandGroups)
             {
                 var unitsToRemove = new List<CommandUnit>();
-                foreach (var unit in commandGroup.CommandUnits)
+                foreach (var unit in commandGroup.Units)
                 {
-                    if (unit.HasTraversedPath || unit.Unit.CommandGroupId != commandGroup.Id)
+                    if (unit.Unit.CommandGroupId != commandGroup.Id)
                         unitsToRemove.Add(unit);
                 }
 
                 foreach (var unit in unitsToRemove)
-                    commandGroup.CommandUnits.Remove(unit);
+                    commandGroup.Units.Remove(unit);
 
-                if (commandGroup.CommandUnits.Count == 0)
+                if (commandGroup.Finished)
                     commandGroupsToRemove.Add(commandGroup);
+                // else
+                //     commandGroup.UpdateSubgroups();
             }
 
             foreach (var group in commandGroupsToRemove)
+            {
+                foreach (var unit in group.Units)
+                    unit.Unit.ClearCommandGroup();
                 _commandGroups.Remove(group);
+            }
         }
 
         // Unity functions
@@ -75,9 +88,9 @@ namespace RtsBehaviourToolkit
         {
             UpdateCommandGroups();
 
-            foreach (var behaviour in _unitBehaviours)
+            foreach (var commandGroup in _commandGroups)
             {
-                foreach (var commandGroup in _commandGroups)
+                foreach (var behaviour in _unitBehaviours)
                     behaviour.Execute(commandGroup);
             }
         }
@@ -89,6 +102,8 @@ namespace RtsBehaviourToolkit
                 RBTUnitCommander.Instance.OnCommandGiven += HandleOnCommandGiven;
             else
                 Debug.LogError("RBTUnitCommander couldn't subscribe to RBTUnitCommander.Instance.OnCommandGiven");
+
+            _unitGrid.Add(_testUnit);
         }
 
         void OnDrawGizmos()
@@ -100,7 +115,7 @@ namespace RtsBehaviourToolkit
             {
                 foreach (var group in _commandGroups)
                 {
-                    foreach (var commandUnit in group.CommandUnits)
+                    foreach (var commandUnit in group.Units)
                     {
                         foreach (var corner in commandUnit.Path.corners)
                         {
@@ -109,6 +124,8 @@ namespace RtsBehaviourToolkit
                     }
                 }
             }
+
+            _unitGrid.DrawGizmos();
 
             Gizmos.color = originalColor;
         }

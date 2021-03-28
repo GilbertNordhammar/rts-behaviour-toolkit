@@ -8,7 +8,7 @@ namespace RtsBehaviourToolkit
     {
         public override void Execute(CommandGroup group)
         {
-            foreach (var unit in group.CommandUnits)
+            foreach (var unit in group.Units)
             {
                 var direction = unit.OffsetToNextCorner.normalized;
                 unit.Unit.AddMovement(direction);

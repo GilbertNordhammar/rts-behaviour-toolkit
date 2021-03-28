@@ -102,6 +102,9 @@ MonoBehaviour:
   _selectableVolume:
     _size: {x: 0.84, y: 1.86, z: 0.66}
     _offset: {x: 0, y: 0.86, z: 0}
+  _bounds:
+    m_Center: {x: 0, y: 0.87, z: 0}
+    m_Extent: {x: 0.47, y: 0.96, z: 0.37}
 --- !u!1 &1068519158798810
 GameObject:
   m_ObjectHideFlags: 0

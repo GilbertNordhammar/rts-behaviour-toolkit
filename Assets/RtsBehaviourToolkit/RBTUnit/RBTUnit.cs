@@ -14,13 +14,25 @@ namespace RtsBehaviourToolkit
         [Min(0)]
         float _speed = 2.0f;
         [SerializeField]
-        SelectableVolume _selectableVolume;
+        Bounds _bounds;
 
         // Public
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
-        public Vector3[] SelectablePoints { get => _selectableVolume.GetPoints(transform.position, transform.rotation); }
 
-        public string CommandGroupId { get; set; }
+        public UnitBounds Bounds { get; private set; }
+
+        public void ClearCommandGroup()
+        {
+            CommandGroupId = "none";
+        }
+
+        public void AssignCommandGroup(string id)
+        {
+            if (id == null) id = "none";
+            CommandGroupId = id;
+        }
+
+        public string CommandGroupId { get; private set; } = "none";
 
         public bool Selected
         {
@@ -108,6 +120,7 @@ namespace RtsBehaviourToolkit
         {
             _rigidBody = GetComponent<Rigidbody>();
             _collider = GetComponent<CapsuleCollider>();
+            Bounds = new UnitBounds(transform, _bounds);
         }
 
         void FixedUpdate()
@@ -161,27 +174,33 @@ namespace RtsBehaviourToolkit
         }
 
         // Unity Editor functions
+        void OnValidate()
+        {
+            Bounds = new UnitBounds(transform, _bounds);
+        }
+
         void OnDrawGizmosSelected()
         {
             var originalColor = Gizmos.color;
             Gizmos.color = Color.white;
 
-            var p = SelectablePoints;
+            var p = Bounds.Corners;
+
             // top
             Gizmos.DrawLine(p[0], p[1]);
-            Gizmos.DrawLine(p[1], p[3]);
-            Gizmos.DrawLine(p[3], p[2]);
-            Gizmos.DrawLine(p[2], p[0]);
+            Gizmos.DrawLine(p[1], p[2]);
+            Gizmos.DrawLine(p[2], p[3]);
+            Gizmos.DrawLine(p[3], p[0]);
             // middle
             Gizmos.DrawLine(p[0], p[4]);
             Gizmos.DrawLine(p[1], p[5]);
-            Gizmos.DrawLine(p[3], p[7]);
             Gizmos.DrawLine(p[2], p[6]);
+            Gizmos.DrawLine(p[3], p[7]);
             //bottom
             Gizmos.DrawLine(p[4], p[5]);
-            Gizmos.DrawLine(p[5], p[7]);
-            Gizmos.DrawLine(p[7], p[6]);
-            Gizmos.DrawLine(p[6], p[4]);
+            Gizmos.DrawLine(p[5], p[6]);
+            Gizmos.DrawLine(p[6], p[7]);
+            Gizmos.DrawLine(p[7], p[4]);
 
             Gizmos.color = originalColor;
         }

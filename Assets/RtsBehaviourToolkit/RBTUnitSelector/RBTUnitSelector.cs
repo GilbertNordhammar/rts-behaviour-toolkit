@@ -52,18 +52,21 @@ namespace RtsBehaviourToolkit
         void SelectUnits(SelectBox selectBox)
         {
             _selectedUnits.Clear();
+
             foreach (var unit in RBTUnit.ActiveUnits)
             {
-                bool selected = false;
-                foreach (var point in unit.SelectablePoints)
+                var pointOnScreen = Camera.main.WorldToScreenPoint(unit.Bounds.Center);
+                bool selected = selectBox.IsWithinBox(pointOnScreen);
+                foreach (var point in unit.Bounds.Corners)
                 {
-                    var pointOnScreen = Camera.main.WorldToScreenPoint(point);
-                    selected = selectBox.IsWithinBox(pointOnScreen);
                     if (selected)
                     {
                         _selectedUnits.Add(unit);
                         break;
                     }
+                    pointOnScreen = Camera.main.WorldToScreenPoint(point);
+                    selected = selectBox.IsWithinBox(pointOnScreen);
+
                 }
                 unit.Selected = selected;
             }
