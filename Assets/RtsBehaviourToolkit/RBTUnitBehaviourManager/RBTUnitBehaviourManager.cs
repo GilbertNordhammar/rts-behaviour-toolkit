@@ -84,8 +84,14 @@ namespace RtsBehaviourToolkit
             _unitBehaviours = GetComponentsInChildren<RBTUnitBehaviour>().ToList();
         }
 
+        void Update()
+        {
+            _unitGrid.Update(_testUnit);
+        }
+
         void FixedUpdate()
         {
+            // _unitGrid.Update(_testUnit);
             UpdateCommandGroups();
 
             foreach (var commandGroup in _commandGroups)
@@ -125,7 +131,7 @@ namespace RtsBehaviourToolkit
                 }
             }
 
-            _unitGrid.DrawGizmos();
+            _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Solid, new Color(1, 0, 0, 0.5f));
 
             Gizmos.color = originalColor;
         }
