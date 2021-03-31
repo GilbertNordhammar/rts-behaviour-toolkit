@@ -38,169 +38,76 @@ namespace RtsBehaviourToolkit
         [field: SerializeField]
         public Vector3 Center { get; private set; }
 
-        public void DrawGizmos()
+        public enum GizmosDrawMode
         {
-            // var cellSize = new Vector3(Bounds.x / Dimensions.x, Bounds.y / Dimensions.y, Bounds.z / Dimensions.z);
-            // for (int x = 0; x < Dimensions.x; x++)
-            // {
-            //     for (int y = 0; y < Dimensions.y; y++)
-            //     {
-            //         for (int z = 0; z < Dimensions.z; z++)
-            //         {
-            //             var cellCenter = new Vector3(x * cellSize.x, y * cellSize.y, z * cellSize.z) + cellSize / 2;
-            //             cellCenter = cellCenter - Bounds / 2 + Center;
-            //             Gizmos.DrawWireCube(cellCenter, cellSize);
-            //         }
-            //     }
-            // }
+            Solid, Wire
+        }
+
+        public void DrawGizmos(GizmosDrawMode drawMode, Color color)
+        {
+            var originalColor = Gizmos.color;
+            Gizmos.color = color;
 
             foreach (var cell in _cells.Values)
             {
                 var bounds = new Vector3(1, 1, 1);
-                Gizmos.DrawWireCube(cell.cellIndex + bounds / 2, bounds);
+                if (drawMode == GizmosDrawMode.Solid)
+                    Gizmos.DrawCube(cell.cellIndex + bounds / 2, bounds);
+                else
+                    Gizmos.DrawWireCube(cell.cellIndex + bounds / 2, bounds);
             }
 
-            Debug.Log(_cells.Count);
+            Gizmos.color = originalColor;
         }
 
         public void Add(RBTUnit unit)
         {
-            var cellIndices = GetOccupiedCells(unit);
-            Debug.Log("CHECK THIS OUT " + cellIndices.Length);
+            var cellIndices = CalcOccupiedCells(unit);
 
-            int index = 0;
             foreach (var cellIndex in cellIndices)
             {
-                var newHead = new Node() { unit = unit, cellIndex = cellIndex };
+                var newHead = new CellNode() { unit = unit, cellIndex = cellIndex };
                 if (_cells.ContainsKey(cellIndex))
                 {
-                    Debug.Log("duplicate " + index);
                     var head = _cells[cellIndex];
                     head.previous = newHead;
                     newHead.next = head;
                 }
                 _cells[cellIndex] = newHead;
 
-                if (!_unitToCells.ContainsKey(unit))
-                    _unitToCells.Add(unit, new List<Node>());
-                _unitToCells[unit].Add(newHead);
-
-                index++;
+                if (!_unitToCellNodes.ContainsKey(unit))
+                    _unitToCellNodes.Add(unit, new List<CellNode>());
+                _unitToCellNodes[unit].Add(newHead);
             }
         }
 
-        Vector3Int[] GetOccupiedCells(RBTUnit unit)
+        public void Remove(RBTUnit unit)
         {
-            var boundsCorners = unit.Bounds.Corners;
-            var cellIndices = new HashSet<Vector3Int>();
-            for (int i = 0; i < 4; i++) // change back to 'i < 4' later
+            var cellNodes = _unitToCellNodes[unit];
+            foreach (var node in cellNodes)
             {
-                var startCorner = boundsCorners[i % 4];
-                var endCorner = boundsCorners[(i + 1) % 4];
-
-                var startCell = GetCellIndex(startCorner);
-                var endCell = GetCellIndex(endCorner);
-
-                cellIndices.Add(startCell);
-                if (startCell == endCell) break;
-                cellIndices.Add(endCell);
-
-                var rayDir = (endCorner - startCorner).normalized;
-
-                var step_dzdx = rayDir.z / (rayDir.x + 0.0001f);
-                var step_dxdz = rayDir.x / (rayDir.z + 0.0001f);
-
-                var rayStepX = Mathf.Sqrt(1 + Mathf.Pow(step_dzdx, 2));
-                var rayStepZ = Mathf.Sqrt(1 + Mathf.Pow(step_dxdz, 2));
-
-                int stepX, stepZ;
-                float intialStepX, intialStepZ;
-
-                if (rayDir.x < 0)
+                if (node.next == null)
                 {
-                    stepX = -1;
-                    intialStepX = startCorner.x - startCell.x;
+                    _cells.Remove(node.cellIndex);
+                }
+                else if (node.previous == null)
+                {
+                    node.next.previous = null;
+                    _cells[node.cellIndex] = node.next;
                 }
                 else
                 {
-                    stepX = 1;
-                    intialStepX = (startCell.x + 1) - startCorner.x;
-                }
-
-                if (rayDir.z < 0)
-                {
-                    stepZ = -1;
-                    intialStepZ = startCorner.z - startCell.z;
-                }
-                else
-                {
-                    stepZ = 1;
-                    intialStepZ = (startCell.z + 1) - startCorner.z;
-                }
-
-                var maxRayLength = (endCorner - startCorner).magnitude;
-                var rayLengthX = intialStepX * rayStepX;
-                var rayLengthZ = intialStepZ * rayStepZ;
-
-                float zAlongX = startCorner.z + intialStepX * step_dzdx;
-                float xAlongZ = startCorner.x + intialStepZ * step_dxdz;
-
-                var currentCellX = startCell;
-                var currentCellZ = startCell;
-
-                bool endCellReached = false;
-                while (!endCellReached)
-                {
-                    if (rayLengthX < rayLengthZ)
-                    {
-                        rayLengthX += rayStepX;
-                        if (rayLengthX < maxRayLength)
-                        {
-                            zAlongX += step_dzdx;
-                            currentCellX.x += stepX;
-                            currentCellX.z = Mathf.FloorToInt(zAlongX);
-                            cellIndices.Add(currentCellX);
-                        }
-                    }
-                    else
-                    {
-                        rayLengthZ += rayStepZ;
-                        if (rayLengthZ < maxRayLength)
-                        {
-                            xAlongZ += step_dxdz;
-                            currentCellZ.z += stepZ;
-                            currentCellZ.x = Mathf.FloorToInt(xAlongZ);
-                            cellIndices.Add(currentCellZ);
-                        }
-
-                    }
-
-                    endCellReached = rayLengthX >= maxRayLength && rayLengthZ >= maxRayLength;
+                    node.next.previous = node.previous;
+                    node.previous.next = node.next;
                 }
             }
-
-            var topCount = cellIndices.Count;
-            var cellsY = GetCellIndex(boundsCorners[0]).y - GetCellIndex(boundsCorners[4]).y;
-            var allCellIndices = new Vector3Int[topCount * (cellsY + 1)];
-            Array.Copy(cellIndices.ToArray(), allCellIndices, topCount);
-
-            for (int y = 1; y <= cellsY; y++)
-            {
-                for (int i1 = 0, i2 = topCount * y; i1 < topCount; i1++, i2++)
-                    allCellIndices[i2] = new Vector3Int(allCellIndices[i1].x, allCellIndices[i1].y - y, allCellIndices[i1].z);
-            }
-
-            return allCellIndices;
+            _unitToCellNodes.Remove(unit);
         }
 
-        public void Remove(Unit unit)
+        public void Update(RBTUnit unit)
         {
-
-        }
-
-        public void Update()
-        {
-
+            Remove(unit);
+            Add(unit);
         }
 
         public void FindNear(Vector3 positon, Vector3 bounds)
@@ -208,15 +115,20 @@ namespace RtsBehaviourToolkit
 
         }
 
-        // Private
-        Dictionary<Vector3Int, Node> _cells = new Dictionary<Vector3Int, Node>();
-        Dictionary<RBTUnit, List<Node>> _unitToCells = new Dictionary<RBTUnit, List<Node>>();
+        public Vector3Int[] GetOccupiedCells(RBTUnit unit)
+        {
+            return _unitToCellNodes[unit].Select(node => node.cellIndex).ToArray();
+        }
 
-        class Node
+        // Private
+        Dictionary<Vector3Int, CellNode> _cells = new Dictionary<Vector3Int, CellNode>();
+        Dictionary<RBTUnit, List<CellNode>> _unitToCellNodes = new Dictionary<RBTUnit, List<CellNode>>();
+
+        class CellNode
         {
             public RBTUnit unit;
-            public Node previous;
-            public Node next;
+            public CellNode previous;
+            public CellNode next;
             public Vector3Int cellIndex;
         }
 
@@ -228,6 +140,175 @@ namespace RtsBehaviourToolkit
         string GetCellKey(Vector3Int cellIndex)
         {
             return cellIndex.ToString();
+        }
+
+        class OccupiedCells
+        {
+            public void Add(Vector3Int cell)
+            {
+                if (!rowToCells.ContainsKey(cell.z))
+                    rowToCells.Add(cell.z, new HashSet<Vector3Int>());
+
+                var prevCount = rowToCells[cell.z].Count;
+                rowToCells[cell.z].Add(cell);
+                if (rowToCells[cell.z].Count > prevCount)
+                    Count++;
+
+                if (rowEdgeValues.ContainsKey(cell.z))
+                {
+                    var edgeValues = rowEdgeValues[cell.z];
+                    if (cell.x < edgeValues.Item1)
+                        rowEdgeValues[cell.z] = new Tuple<int, int>(cell.x, edgeValues.Item2);
+                    else if (cell.x > edgeValues.Item2)
+                        rowEdgeValues[cell.z] = new Tuple<int, int>(edgeValues.Item1, cell.x);
+                }
+                else
+                {
+                    rowEdgeValues.Add(cell.z, new Tuple<int, int>(cell.x, cell.x));
+                }
+            }
+
+            public int Count { get; private set; } = 0;
+            public Dictionary<int, HashSet<Vector3Int>> rowToCells = new Dictionary<int, HashSet<Vector3Int>>();
+            public Dictionary<int, Tuple<int, int>> rowEdgeValues = new Dictionary<int, Tuple<int, int>>();
+        }
+
+        List<Vector3Int> CalcOccupiedCells(RBTUnit unit)
+        {
+            var boundsCorners = unit.Bounds.Corners;
+            // var cellIndices = new HashSet<Vector3Int>();
+            var occupiedCells = new OccupiedCells();
+
+            for (int i = 0; i < 4; i++)
+            {
+                var startCorner = boundsCorners[i % 4];
+                var endCorner = boundsCorners[(i + 1) % 4];
+
+                var startCell = GetCellIndex(startCorner);
+                var endCell = GetCellIndex(endCorner);
+
+                occupiedCells.Add(startCell);
+                if (startCell == endCell) continue;
+                occupiedCells.Add(endCell);
+
+                var rayDir = (endCorner - startCorner).normalized;
+
+                var step_dzdx = Mathf.Abs(rayDir.z / (rayDir.x + 0.0001f));
+                var step_dxdz = Mathf.Abs(rayDir.x / (rayDir.z + 0.0001f));
+
+                var rayStepX = Mathf.Sqrt(1 + Mathf.Pow(step_dzdx, 2));
+                var rayStepZ = Mathf.Sqrt(1 + Mathf.Pow(step_dxdz, 2));
+
+                int stepX, stepZ;
+                float initialAdjustmentX, initialAdjustmentZ;
+
+                if (rayDir.x < 0)
+                {
+                    stepX = -1;
+                    initialAdjustmentX = startCorner.x - startCell.x;
+                }
+                else
+                {
+                    stepX = 1;
+                    initialAdjustmentX = (startCell.x + 1) - startCorner.x;
+                }
+
+                if (rayDir.z < 0)
+                {
+                    stepZ = -1;
+                    initialAdjustmentZ = startCorner.z - startCell.z;
+                }
+                else
+                {
+                    stepZ = 1;
+                    initialAdjustmentZ = (startCell.z + 1) - startCorner.z;
+                }
+
+                step_dxdz *= stepX;
+                step_dzdx *= stepZ;
+
+                var rayLengthX = initialAdjustmentX * rayStepX;
+                var rayLengthZ = initialAdjustmentZ * rayStepZ;
+
+                float zAlongX = startCorner.z + step_dzdx * initialAdjustmentX;
+                float xAlongZ = startCorner.x + step_dxdz * initialAdjustmentZ;
+
+                var maxRayLength = (endCorner - startCorner).magnitude;
+
+                var currentCellX = GetCellIndex(new Vector3(startCorner.x + stepX * initialAdjustmentX, startCorner.y, zAlongX));
+                if (rayLengthX < maxRayLength)
+                    occupiedCells.Add(currentCellX);
+
+                var currentCellZ = GetCellIndex(new Vector3(xAlongZ, startCorner.y, startCorner.z + stepZ * initialAdjustmentZ));
+                if (rayLengthZ < maxRayLength)
+                    occupiedCells.Add(currentCellZ);
+
+                bool endCellReached = false;
+                while (!endCellReached)
+                {
+                    bool commonAdjacentCell = currentCellZ.z - currentCellX.z == 1 && currentCellX.x - currentCellZ.x == 1;
+                    if (commonAdjacentCell)
+                        occupiedCells.Add(new Vector3Int(currentCellZ.x, startCell.y, currentCellX.z));
+
+                    if (rayLengthX < rayLengthZ)
+                    {
+                        rayLengthX += rayStepX;
+                        if (rayLengthX < maxRayLength)
+                        {
+                            zAlongX += step_dzdx;
+                            currentCellX.x += stepX;
+                            currentCellX.z = Mathf.FloorToInt(zAlongX);
+                            occupiedCells.Add(currentCellX);
+                        }
+                    }
+                    else
+                    {
+                        rayLengthZ += rayStepZ;
+                        if (rayLengthZ < maxRayLength)
+                        {
+                            xAlongZ += step_dxdz;
+                            currentCellZ.z += stepZ;
+                            currentCellZ.x = Mathf.FloorToInt(xAlongZ);
+                            occupiedCells.Add(currentCellZ);
+                        }
+                    }
+
+                    endCellReached = rayLengthX >= maxRayLength && rayLengthZ >= maxRayLength;
+                }
+            }
+
+            foreach (var entry in occupiedCells.rowEdgeValues)
+            {
+                var valuePair = entry.Value;
+                var smallestX = valuePair.Item1;
+                var biggestX = valuePair.Item2;
+                var z = entry.Key;
+                var y = Mathf.FloorToInt(boundsCorners[0].y);
+                for (int x = smallestX + 1; x < biggestX; x++)
+                {
+                    occupiedCells.Add(new Vector3Int(x, y, z));
+                }
+            }
+
+            int topCount = occupiedCells.Count;
+            var allCells = new List<Vector3Int>();
+            allCells.Capacity = topCount;
+            foreach (var row in occupiedCells.rowToCells.Values)
+            {
+                foreach (var cell in row)
+                {
+                    allCells.Add(cell);
+                }
+            }
+            var diffY = GetCellIndex(boundsCorners[0]).y - GetCellIndex(boundsCorners[4]).y;
+
+            for (int y = 1; y <= diffY; y++)
+            {
+                for (int i = 0; i < topCount; i++)
+                    allCells.Add(new Vector3Int(allCells[i].x, allCells[i].y - y, allCells[i].z));
+            }
+
+            return allCells;
         }
     }
 }

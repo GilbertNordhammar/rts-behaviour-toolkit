@@ -86,12 +86,13 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
+            // Gizmos flash like crazy if this is put in FixedUpdate(),
+            // but performance improves
             _unitGrid.Update(_testUnit);
         }
 
         void FixedUpdate()
         {
-            // _unitGrid.Update(_testUnit);
             UpdateCommandGroups();
 
             foreach (var commandGroup in _commandGroups)
@@ -131,7 +132,7 @@ namespace RtsBehaviourToolkit
                 }
             }
 
-            _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Solid, new Color(1, 0, 0, 0.5f));
+            _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
 
             Gizmos.color = originalColor;
         }
