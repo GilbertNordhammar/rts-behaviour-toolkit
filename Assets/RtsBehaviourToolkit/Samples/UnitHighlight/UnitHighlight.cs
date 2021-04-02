@@ -13,12 +13,12 @@ public class UnitHighlight : MonoBehaviour
     MeshRenderer _highlightRenderer;
 
     // Private
-    void HandleUnitSelected(RBTUnit.SelectionEvent evnt)
+    void HandleUnitSelected(RBTUnit.UnitEvent evnt)
     {
         EnableHighlight(true);
     }
 
-    void HandleUnitDeselected(RBTUnit.SelectionEvent evnt)
+    void HandleUnitDeselected(RBTUnit.UnitEvent evnt)
     {
         EnableHighlight(false);
     }

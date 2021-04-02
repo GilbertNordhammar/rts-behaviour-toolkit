@@ -13,11 +13,6 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         [Min(0f)]
         float _subgroupDistance = 2f;
-        [SerializeField]
-        UnitGrid _unitGrid;
-
-        [SerializeField]
-        RBTUnit _testUnit;
 
         // Public
         public static RBTUnitBehaviourManager Instance { get; private set; }
@@ -25,6 +20,7 @@ namespace RtsBehaviourToolkit
         // Private
         List<RBTUnitBehaviour> _unitBehaviours;
         List<CommandGroup> _commandGroups = new List<CommandGroup>();
+        UnitGrid _unitGrid = new UnitGrid();
 
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
@@ -82,13 +78,24 @@ namespace RtsBehaviourToolkit
             else Instance = this;
 
             _unitBehaviours = GetComponentsInChildren<RBTUnitBehaviour>().ToList();
+
+            RBTUnit.OnActivated += (evnt) =>
+            {
+                _unitGrid.Add(evnt.sender);
+            };
+
+            RBTUnit.OnDeactivated += (evnt) =>
+            {
+                _unitGrid.Remove(evnt.sender);
+            };
         }
 
         void Update()
         {
             // Gizmos flash like crazy if this is put in FixedUpdate(),
             // but performance improves
-            _unitGrid.Update(_testUnit);
+            foreach (var unit in RBTUnit.ActiveUnits)
+                _unitGrid.Update(unit);
         }
 
         void FixedUpdate()
@@ -110,7 +117,8 @@ namespace RtsBehaviourToolkit
             else
                 Debug.LogError("RBTUnitCommander couldn't subscribe to RBTUnitCommander.Instance.OnCommandGiven");
 
-            _unitGrid.Add(_testUnit);
+            foreach (var unit in RBTUnit.ActiveUnits)
+                _unitGrid.Add(unit);
         }
 
         void OnDrawGizmos()

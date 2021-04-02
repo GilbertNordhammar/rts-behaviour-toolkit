@@ -14,30 +14,6 @@ namespace RtsBehaviourToolkit
         // TODO: Find a way of having custom constructors. With written constructors, private values reset to default value 
         //       for their respective types even though they're initialized
 
-        // public UnitGrid(Vector3 bounds, Vector3Int dimensions) : this(bounds, dimensions, Vector3.zero)
-        // {
-        //     Debug.Log("UnitGrid2");
-        // }
-
-        // public UnitGrid(Vector3 bounds, Vector3Int dimensions, Vector3 center)
-        // {
-        //     Debug.Log("UnitGrid3");
-        //     Bounds = bounds;
-        //     Dimensions = dimensions;
-        //     Center = center;
-        // }
-
-        [field: SerializeField]
-        [field: Min(1)]
-        public Vector3 Bounds { get; private set; }
-
-        [field: SerializeField]
-        [field: Min(1)]
-        public Vector3Int Dimensions { get; private set; }
-
-        [field: SerializeField]
-        public Vector3 Center { get; private set; }
-
         public enum GizmosDrawMode
         {
             Solid, Wire
@@ -48,60 +24,62 @@ namespace RtsBehaviourToolkit
             var originalColor = Gizmos.color;
             Gizmos.color = color;
 
-            foreach (var cell in _cells.Values)
+            foreach (var cellIndex in _indexToCell.Keys)
             {
                 var bounds = new Vector3(1, 1, 1);
                 if (drawMode == GizmosDrawMode.Solid)
-                    Gizmos.DrawCube(cell.cellIndex + bounds / 2, bounds);
+                    Gizmos.DrawCube(cellIndex + bounds / 2, bounds);
                 else
-                    Gizmos.DrawWireCube(cell.cellIndex + bounds / 2, bounds);
+                    Gizmos.DrawWireCube(cellIndex + bounds / 2, bounds);
             }
-
             Gizmos.color = originalColor;
         }
 
         public void Add(RBTUnit unit)
         {
-            var cellIndices = CalcOccupiedCells(unit);
+            if (_unitToCells.ContainsKey(unit)) return;
+            else _unitToCells.Add(unit, new List<CellNode>());
 
+            var cellIndices = CalcOccupiedCells(unit);
             foreach (var cellIndex in cellIndices)
             {
                 var newHead = new CellNode() { unit = unit, cellIndex = cellIndex };
-                if (_cells.ContainsKey(cellIndex))
+                if (_indexToCell.ContainsKey(cellIndex))
                 {
-                    var head = _cells[cellIndex];
-                    head.previous = newHead;
-                    newHead.next = head;
+                    var prevHead = _indexToCell[cellIndex];
+                    prevHead.previous = newHead;
+                    newHead.next = prevHead;
                 }
-                _cells[cellIndex] = newHead;
 
-                if (!_unitToCellNodes.ContainsKey(unit))
-                    _unitToCellNodes.Add(unit, new List<CellNode>());
-                _unitToCellNodes[unit].Add(newHead);
+                _indexToCell[cellIndex] = newHead;
+                _unitToCells[unit].Add(newHead);
             }
         }
 
         public void Remove(RBTUnit unit)
         {
-            var cellNodes = _unitToCellNodes[unit];
+            var cellNodes = _unitToCells[unit];
+
             foreach (var node in cellNodes)
             {
-                if (node.next == null)
+                var previous = node.previous;
+                var next = node.next;
+
+                if (previous == null && next == null)
                 {
-                    _cells.Remove(node.cellIndex);
-                }
-                else if (node.previous == null)
-                {
-                    node.next.previous = null;
-                    _cells[node.cellIndex] = node.next;
+                    _indexToCell.Remove(node.cellIndex);
+
                 }
                 else
                 {
-                    node.next.previous = node.previous;
-                    node.previous.next = node.next;
+                    if (previous != null)
+                        previous.next = next;
+                    if (next != null)
+                        next.previous = previous;
                 }
             }
-            _unitToCellNodes.Remove(unit);
+
+            _unitToCells.Remove(unit);
         }
 
         public void Update(RBTUnit unit)
@@ -110,19 +88,39 @@ namespace RtsBehaviourToolkit
             Add(unit);
         }
 
-        public void FindNear(Vector3 positon, Vector3 bounds)
+        public List<RBTUnit> FindNear(Vector3 position, Vector3 bounds)
         {
+            var minCell = GetCellIndex(position - bounds);
+            var maxCell = GetCellIndex(position + bounds);
+            var nearbyUnits = new List<RBTUnit>();
+            for (int x = minCell.x; x <= maxCell.x; x++)
+            {
+                for (int y = minCell.y; y <= maxCell.y; y++)
+                {
+                    for (int z = minCell.z; z <= maxCell.z; z++)
+                    {
+                        CellNode cellNode;
+                        _indexToCell.TryGetValue(new Vector3Int(x, y, z), out cellNode);
+                        while (cellNode != null)
+                        {
+                            nearbyUnits.Add(cellNode.unit);
+                            cellNode = cellNode.next;
+                        }
+                    }
+                }
+            }
 
+            return nearbyUnits;
         }
 
         public Vector3Int[] GetOccupiedCells(RBTUnit unit)
         {
-            return _unitToCellNodes[unit].Select(node => node.cellIndex).ToArray();
+            return _unitToCells[unit].Select(node => node.cellIndex).ToArray();
         }
 
         // Private
-        Dictionary<Vector3Int, CellNode> _cells = new Dictionary<Vector3Int, CellNode>();
-        Dictionary<RBTUnit, List<CellNode>> _unitToCellNodes = new Dictionary<RBTUnit, List<CellNode>>();
+        Dictionary<Vector3Int, CellNode> _indexToCell = new Dictionary<Vector3Int, CellNode>();
+        Dictionary<RBTUnit, List<CellNode>> _unitToCells = new Dictionary<RBTUnit, List<CellNode>>();
 
         class CellNode
         {

@@ -34,6 +34,11 @@ namespace RtsBehaviourToolkit
 
         public string CommandGroupId { get; private set; } = "none";
 
+        public void AddMovement(Vector3 movement)
+        {
+            _movementSum += movement;
+        }
+
         public bool Selected
         {
             get => _selected;
@@ -41,7 +46,7 @@ namespace RtsBehaviourToolkit
             {
                 if (value != _selected)
                 {
-                    var evnt = new SelectionEvent() { sender = this };
+                    var evnt = new UnitEvent() { sender = this };
                     if (value)
                         _onSelected.Invoke(evnt);
                     else
@@ -51,57 +56,8 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public event Action<SelectionEvent> OnSelected
-        {
-            add
-            {
-                lock (_onSelectedLock)
-                {
-                    _onSelected += value;
-                }
-            }
-            remove
-            {
-                lock (_onSelectedLock)
-                {
-                    _onSelected -= value;
-                }
-            }
-        }
-
-        public event Action<SelectionEvent> OnDeselected
-        {
-            add
-            {
-                lock (_onDeselectedLock)
-                {
-                    _onDeselected += value;
-                }
-            }
-            remove
-            {
-                lock (_onDeselectedLock)
-                {
-                    _onDeselected -= value;
-                }
-            }
-        }
-
-        public struct SelectionEvent
-        {
-            public RBTUnit sender;
-        }
-        public void AddMovement(Vector3 movement)
-        {
-            _movementSum += movement;
-        }
-
         // Private
         bool _selected = false;
-        event Action<SelectionEvent> _onSelected = delegate { };
-        event Action<SelectionEvent> _onDeselected = delegate { };
-        readonly object _onSelectedLock = new object();
-        readonly object _onDeselectedLock = new object();
         Rigidbody _rigidBody;
         Vector3 _movementSum;
         CapsuleCollider _collider;
@@ -121,6 +77,29 @@ namespace RtsBehaviourToolkit
             _rigidBody = GetComponent<Rigidbody>();
             _collider = GetComponent<CapsuleCollider>();
             Bounds = new UnitBounds(transform, _bounds);
+        }
+
+        void Start()
+        {
+            _onActivated.Invoke(new UnitEvent() { sender = this });
+        }
+
+        // void OnDestroy()
+        // {
+        //     ActiveUnits.Remove(this);
+        //     _onDeactivated.Invoke(new UnitEvent() { sender = this });
+        // }
+
+        void OnEnable()
+        {
+            ActiveUnits.Add(this);
+            _onActivated.Invoke(new UnitEvent() { sender = this });
+        }
+
+        void OnDisable()
+        {
+            ActiveUnits.Remove(this);
+            _onDeactivated.Invoke(new UnitEvent() { sender = this });
         }
 
         void FixedUpdate()
@@ -153,24 +132,8 @@ namespace RtsBehaviourToolkit
 
             _rigidBody.velocity = movement;
 
-            // Debug
-            // Debug.Log(_rigidBody.velocity.magnitude);
-            Debug.DrawRay(transform.position, movement * 5, Color.red);
-            Debug.DrawRay(transform.position, _movementSum.normalized * 4, Color.white);
-            Debug.DrawRay(transform.position, surfaceNormal * 4, Color.green);
-
             // reset movement until next update
             _movementSum = Vector3.zero;
-        }
-
-        void OnEnable()
-        {
-            ActiveUnits.Add(this);
-        }
-
-        void OnDisable()
-        {
-            ActiveUnits.Remove(this);
         }
 
         // Unity Editor functions
