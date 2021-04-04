@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,17 +25,40 @@ namespace RtsBehaviourToolkit
 
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
-            // TODO: Offset target positions according to leader
+            _commandGroups.AddRange(CalcCommandgroups(evnt.Units, _subgroupDistance, evnt.Position));
+        }
 
-            var commandUnits = new List<CommandUnit>();
-            foreach (var unit in evnt.Units)
+        List<CommandGroup> CalcCommandgroups(List<RBTUnit> units, float maxDistance, Vector3 destination)
+        {
+            var unitsWithoutGroup = new HashSet<RBTUnit>(units);
+            var b = Mathf.Sqrt(Mathf.Pow(maxDistance, 2) / 2);
+            var bounds = new Vector3(b, 0, b);
+
+            Action<RBTUnit, List<RBTUnit>> calcConnectingUnits = null;
+            calcConnectingUnits = (startingUnit, unitsInCommandGroup) =>
             {
-                var path = new NavMeshPath();
-                NavMesh.CalculatePath(unit.transform.position, evnt.Position, NavMesh.AllAreas, path);
-                commandUnits.Add(new CommandUnit(unit, path));
+                unitsWithoutGroup.Remove(startingUnit);
+                unitsInCommandGroup.Add(startingUnit);
+                var nearbyUnits = _unitGrid.FindNear(startingUnit.transform.position, bounds);
+                foreach (var unit in nearbyUnits)
+                {
+                    if (unitsWithoutGroup.Contains(unit))
+                        calcConnectingUnits(unit, unitsInCommandGroup);
+                }
+            };
+
+            var commandGroups = new List<CommandGroup>();
+            foreach (var unit in units)
+            {
+                if (unitsWithoutGroup.Contains(unit))
+                {
+                    var unitsInCommandGroup = new List<RBTUnit>();
+                    calcConnectingUnits(unit, unitsInCommandGroup);
+                    commandGroups.Add(new CommandGroup(unitsInCommandGroup, destination));
+                }
             }
 
-            _commandGroups.Add(new CommandGroup(commandUnits, _subgroupDistance));
+            return commandGroups;
         }
 
         void UpdateCommandGroups()
@@ -42,20 +66,9 @@ namespace RtsBehaviourToolkit
             var commandGroupsToRemove = new List<CommandGroup>();
             foreach (var commandGroup in _commandGroups)
             {
-                var unitsToRemove = new List<CommandUnit>();
-                foreach (var unit in commandGroup.Units)
-                {
-                    if (unit.Unit.CommandGroupId != commandGroup.Id)
-                        unitsToRemove.Add(unit);
-                }
-
-                foreach (var unit in unitsToRemove)
-                    commandGroup.Units.Remove(unit);
-
-                if (commandGroup.Finished)
+                commandGroup.Update();
+                if (commandGroup.Units.Count == 0)
                     commandGroupsToRemove.Add(commandGroup);
-                // else
-                //     commandGroup.UpdateSubgroups();
             }
 
             foreach (var group in commandGroupsToRemove)
@@ -132,7 +145,7 @@ namespace RtsBehaviourToolkit
                 {
                     foreach (var commandUnit in group.Units)
                     {
-                        foreach (var corner in commandUnit.Path.corners)
+                        foreach (var corner in commandUnit.Path)
                         {
                             Gizmos.DrawSphere(corner, 0.3f);
                         }

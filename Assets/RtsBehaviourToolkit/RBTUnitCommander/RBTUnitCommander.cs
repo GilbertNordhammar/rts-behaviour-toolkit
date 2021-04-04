@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace RtsBehaviourToolkit
 {
@@ -55,16 +56,16 @@ namespace RtsBehaviourToolkit
         void CommandUnits(Vector3 mousePosition, List<RBTUnit> units)
         {
             var ray = Camera.main.ScreenPointToRay(mousePosition);
-            var mask = RBTConfig.WalkableMask | RBTConfig.TerrainMask;
-            RaycastHit hit = new RaycastHit();
-            bool clickOnWalkableSurface = Physics.Raycast(ray, out hit, 100f, mask);
+            var clickMask = RBTConfig.WalkableMask;
+            RaycastHit clickHit = new RaycastHit();
 
-            if (clickOnWalkableSurface)
+            if (Physics.Raycast(ray, out clickHit, 100f, clickMask))
             {
-                var hitLayer = hit.collider.gameObject.layer;
-                var isWalkable = RBTConfig.WalkableMask == (RBTConfig.WalkableMask | (1 << hitLayer));
+                NavMeshHit navMeshHit;
+                var walkableMask = 1 << NavMesh.GetAreaFromName("Walkable");
+                var isWalkable = NavMesh.SamplePosition(clickHit.point, out navMeshHit, 1f, walkableMask);
                 if (isWalkable)
-                    _onCommandGiven.Invoke(new CommandGivenEvent(this, hit.point, units));
+                    _onCommandGiven.Invoke(new CommandGivenEvent(this, clickHit.point, units));
             }
         }
 

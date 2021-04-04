@@ -11,8 +11,7 @@ namespace RtsBehaviourToolkit
     {
         // Public
 
-        // TODO: Find a way of having custom constructors. With written constructors, private values reset to default value 
-        //       for their respective types even though they're initialized
+        // TODO: Add constructor that let's you set cell size
 
         public enum GizmosDrawMode
         {
@@ -88,11 +87,11 @@ namespace RtsBehaviourToolkit
             Add(unit);
         }
 
-        public List<RBTUnit> FindNear(Vector3 position, Vector3 bounds)
+        public HashSet<RBTUnit> FindNear(Vector3 position, Vector3 bounds)
         {
             var minCell = GetCellIndex(position - bounds);
             var maxCell = GetCellIndex(position + bounds);
-            var nearbyUnits = new List<RBTUnit>();
+            var nearbyUnits = new HashSet<RBTUnit>();
             for (int x = minCell.x; x <= maxCell.x; x++)
             {
                 for (int y = minCell.y; y <= maxCell.y; y++)

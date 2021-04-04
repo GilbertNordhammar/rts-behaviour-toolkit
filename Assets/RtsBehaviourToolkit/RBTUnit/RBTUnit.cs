@@ -84,12 +84,6 @@ namespace RtsBehaviourToolkit
             _onActivated.Invoke(new UnitEvent() { sender = this });
         }
 
-        // void OnDestroy()
-        // {
-        //     ActiveUnits.Remove(this);
-        //     _onDeactivated.Invoke(new UnitEvent() { sender = this });
-        // }
-
         void OnEnable()
         {
             ActiveUnits.Add(this);
