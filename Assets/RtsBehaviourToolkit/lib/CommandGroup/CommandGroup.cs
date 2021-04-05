@@ -8,10 +8,11 @@ using UnityEngine.AI;
 
 namespace RtsBehaviourToolkit
 {
-    public class CommandGroup
+    public partial class CommandGroup
     {
         public CommandGroup(List<RBTUnit> units, Vector3 destination)
         {
+            // TODO: Move path calculation to somehwere more suitable
             var center = new Vector3();
             foreach (var unit in units)
             {
@@ -32,7 +33,7 @@ namespace RtsBehaviourToolkit
                     Array.Copy(navMeshPath.corners, path, navMeshPath.corners.Length);
                     for (int j = 0; j < path.Length; j++)
                         path[j] += posOffset;
-                    Units.Add(new CommandUnit(units[i], path));
+                    Units.Add(new CommandUnit(units[i], new Path(path)));
                 }
 
                 foreach (var unit in Units)
@@ -45,8 +46,21 @@ namespace RtsBehaviourToolkit
             var unitsToRemove = new List<CommandUnit>();
             foreach (var unit in Units)
             {
+                var prevCorner = unit.CurrentPath.NextCorner;
+
+                unit.Update();
+
+                if (prevCorner != unit.CurrentPath.NextCorner)
+                    _onNewCorner.Invoke(new NewCornerEvent(this, unit, prevCorner));
+
                 if (unit.Finished || unit.Unit.CommandGroupId != Id)
+                {
+                    if (unit.Finished)
+                        _onFinished.Invoke(new FinishedEvent(this, unit));
+                    else
+                        _onNewGroup.Invoke(new NewGroupEvent(this, unit));
                     unitsToRemove.Add(unit);
+                }
             }
 
             foreach (var unit in unitsToRemove)
@@ -62,57 +76,53 @@ namespace RtsBehaviourToolkit
     public class CommandUnit
     {
         // Public
-        public CommandUnit(RBTUnit unit, Vector3[] path)
+        public CommandUnit(RBTUnit unit, Path path)
         {
             Unit = unit;
-            Path = path;
+            PathQueue.Add(path);
         }
         public RBTUnit Unit { get; }
 
-        public Vector3[] Path { get; }
+        public List<Path> PathQueue { get; } = new List<Path>();
+        public Path CurrentPath { get => PathQueue.Last(); }
 
-        public Vector3 NextCorner
+        public void PushPath(Path path)
         {
-            get
+            PathQueue.Add(path);
+        }
+
+        public void PushPath(Vector3[] nodes)
+        {
+            PathQueue.Add(new Path(nodes));
+        }
+
+        public void Update()
+        {
+            var absOffset = CurrentPath.NextCorner - Unit.transform.position;
+            absOffset = new Vector3(Mathf.Abs(absOffset.x), Mathf.Abs(absOffset.y), Mathf.Abs(absOffset.z));
+            if (absOffset.x < 0.1 && absOffset.z < 0.1 && absOffset.y < 1.0) // base "absOffset.y < 1.0" off of unit height
             {
-                return Path[NextCornerIndex];
+                CurrentPath.Increment();
+                if (CurrentPath.Traversed)
+                {
+                    if (PathQueue.Count == 1)
+                        Finished = true;
+                    else
+                        PathQueue.RemoveAt(PathQueue.Count - 1);
+                }
             }
-        }
-
-        public Vector3 OffsetToNextCorner
-        {
-            get => Path[NextCornerIndex] - Unit.transform.position;
-        }
-
-        public float DistToNextCorner
-        {
-            get => Vector3.Distance(Path[NextCornerIndex], Unit.transform.position);
         }
 
         public int NextCornerIndex
         {
-            get
-            {
-                var absOffset = Path[_indexNextCorner] - Unit.transform.position;
-                absOffset = new Vector3(Mathf.Abs(absOffset.x), Mathf.Abs(absOffset.y), Mathf.Abs(absOffset.z));
-                if (absOffset.x < 0.1 && absOffset.z < 0.1 && absOffset.y < 1.0) // base "absOffset.y < 1.0" off of unit height
-                {
-                    _indexNextCorner++;
-                    if (_indexNextCorner >= Path.Length)
-                    {
-                        _indexNextCorner = Path.Length - 1;
-                        Finished = true;
-                    }
-                }
-                return _indexNextCorner;
-            }
+            get => CurrentPath.NextCornerIndex;
         }
 
-        public bool Finished { get; set; }
+        public void MarkAsFinished()
+        {
+            Finished = true;
+        }
 
-        // Private
-        private int _indexNextCorner = 0;
+        public bool Finished { get; private set; }
     }
-
 }
-

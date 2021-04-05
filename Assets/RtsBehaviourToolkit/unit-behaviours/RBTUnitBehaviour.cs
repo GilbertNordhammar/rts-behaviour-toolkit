@@ -7,7 +7,8 @@ namespace RtsBehaviourToolkit
     [System.Serializable]
     public abstract class RBTUnitBehaviour : MonoBehaviour
     {
-        public abstract void Execute(CommandGroup group);
+        public virtual void OnCommandGroupCreated(CommandGroup commandGroup) { }
+        public virtual void OnUpdate(CommandGroup group) { }
     }
 }
 

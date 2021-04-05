@@ -29,7 +29,15 @@ namespace RtsBehaviourToolkit
 
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
-            _commandGroups.AddRange(CalcCommandgroups(evnt.Units, _subgroupDistance, evnt.Position));
+            var commandGroups = CalcCommandgroups(evnt.Units, _subgroupDistance, evnt.Position);
+            foreach (var behaviour in _unitBehaviours)
+            {
+                foreach (var group in commandGroups)
+                {
+                    behaviour.OnCommandGroupCreated(group);
+                }
+            }
+            _commandGroups.AddRange(commandGroups);
         }
 
         List<CommandGroup> CalcCommandgroups(List<RBTUnit> units, float maxDistance, Vector3 destination)
@@ -122,7 +130,7 @@ namespace RtsBehaviourToolkit
             foreach (var commandGroup in _commandGroups)
             {
                 foreach (var behaviour in _unitBehaviours)
-                    behaviour.Execute(commandGroup);
+                    behaviour.OnUpdate(commandGroup);
             }
         }
 
@@ -149,20 +157,17 @@ namespace RtsBehaviourToolkit
                 {
                     foreach (var commandUnit in group.Units)
                     {
-                        for (int i = 0; i < commandUnit.Path.Length; i++)
+                        var pathNodes = commandUnit.PathQueue.Last().Nodes;
+                        for (int i = 0; i < pathNodes.Length; i++)
                         {
-                            var corner1 = commandUnit.Path[i];
-                            Gizmos.DrawSphere(corner1, 0.2f);
-                            if ((i + 1) < commandUnit.Path.Length)
+                            var node1 = pathNodes[i];
+                            Gizmos.DrawSphere(node1, 0.2f);
+                            if ((i + 1) < pathNodes.Length)
                             {
-                                var corner2 = commandUnit.Path[i + 1];
-                                Gizmos.DrawSphere(corner2, 0.3f);
-                                Gizmos.DrawLine(corner1, corner2);
+                                var node2 = pathNodes[i + 1];
+                                Gizmos.DrawSphere(node2, 0.2f);
+                                Gizmos.DrawLine(node1, node2);
                             }
-                        }
-                        foreach (var corner in commandUnit.Path)
-                        {
-                            Gizmos.DrawSphere(corner, 0.3f);
                         }
                     }
                 }

@@ -6,7 +6,6 @@ namespace RtsBehaviourToolkit
 {
     public readonly struct UnitBounds
     {
-
         public UnitBounds(Transform transform, Bounds bounds)
         {
             _transform = transform;
