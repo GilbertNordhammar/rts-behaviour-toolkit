@@ -10,34 +10,12 @@ namespace RtsBehaviourToolkit
 {
     public partial class CommandGroup
     {
-        public CommandGroup(List<RBTUnit> units, Vector3 destination)
+        public CommandGroup(List<CommandUnit> units)
         {
-            // TODO: Move path calculation to somehwere more suitable
-            var center = new Vector3();
-            foreach (var unit in units)
+            Units = new List<CommandUnit>(units);
+            foreach (var unit in Units)
             {
-                center += unit.transform.position;
-            }
-            center /= units.Count;
-
-            var navMeshPath = new NavMeshPath();
-            NavMesh.CalculatePath(center, destination, NavMesh.AllAreas, navMeshPath);
-
-            if (navMeshPath.status == NavMeshPathStatus.PathComplete)
-            {
-                Units.Capacity = units.Count;
-                for (int i = 0; i < units.Count; i++)
-                {
-                    var posOffset = units[i].transform.position - center;
-                    var path = new Vector3[navMeshPath.corners.Length];
-                    Array.Copy(navMeshPath.corners, path, navMeshPath.corners.Length);
-                    for (int j = 0; j < path.Length; j++)
-                        path[j] += posOffset;
-                    Units.Add(new CommandUnit(units[i], new Path(path)));
-                }
-
-                foreach (var unit in Units)
-                    unit.Unit.AssignCommandGroup(Id);
+                unit.Unit.AssignCommandGroup(Id);
             }
         }
 
@@ -81,6 +59,12 @@ namespace RtsBehaviourToolkit
             Unit = unit;
             PathQueue.Add(path);
         }
+
+        public CommandUnit(RBTUnit unit, Vector3[] pathNodes)
+            : this(unit, new Path(pathNodes))
+        {
+        }
+
         public RBTUnit Unit { get; }
 
         public List<Path> PathQueue { get; } = new List<Path>();

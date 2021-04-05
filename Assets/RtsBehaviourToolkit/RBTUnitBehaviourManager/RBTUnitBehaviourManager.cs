@@ -66,11 +66,43 @@ namespace RtsBehaviourToolkit
                 {
                     var unitsInCommandGroup = new List<RBTUnit>();
                     calcConnectingUnits(unit, unitsInCommandGroup);
-                    commandGroups.Add(new CommandGroup(unitsInCommandGroup, destination));
+                    var commandUnits = CalcCommandUnits(unitsInCommandGroup, destination);
+                    if (commandUnits.Count > 0)
+                        commandGroups.Add(new CommandGroup(commandUnits));
                 }
             }
 
             return commandGroups;
+        }
+
+        List<CommandUnit> CalcCommandUnits(List<RBTUnit> units, Vector3 destination)
+        {
+            var center = new Vector3();
+            foreach (var unit in units)
+            {
+                center += unit.transform.position;
+            }
+            center /= units.Count;
+
+            var navMeshPath = new NavMeshPath();
+            NavMesh.CalculatePath(center, destination, NavMesh.AllAreas, navMeshPath);
+
+            var commandUnits = new List<CommandUnit>();
+            commandUnits.Capacity = units.Count;
+            if (navMeshPath.status == NavMeshPathStatus.PathComplete)
+            {
+                foreach (var unit in units)
+                {
+                    var posOffset = unit.transform.position - center;
+                    var nodes = new Vector3[navMeshPath.corners.Length];
+                    Array.Copy(navMeshPath.corners, nodes, navMeshPath.corners.Length);
+                    for (int j = 0; j < nodes.Length; j++)
+                        nodes[j] += posOffset;
+                    commandUnits.Add(new CommandUnit(unit, nodes));
+                }
+            }
+
+            return commandUnits;
         }
 
         void UpdateCommandGroups()
