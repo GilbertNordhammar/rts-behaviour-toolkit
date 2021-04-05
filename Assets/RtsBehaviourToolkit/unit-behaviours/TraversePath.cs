@@ -5,8 +5,14 @@ using UnityEngine.AI;
 
 namespace RtsBehaviourToolkit
 {
-    public class RBTFollowPath : RBTUnitBehaviour
+    [CreateAssetMenu(fileName = "TraversePath", menuName = "RtsBehaviourToolkit/Behaviours/TraversePath")]
+    [System.Serializable]
+    public class TraversePath : UnitBehaviour
     {
+        [SerializeField]
+        [Min(0f)]
+        int _weight;
+
         public override void OnCommandGroupCreated(CommandGroup group)
         {
             group.OnNewCorner += (evnt) =>
@@ -55,3 +61,4 @@ namespace RtsBehaviourToolkit
         }
     }
 }
+

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace RtsBehaviourToolkit
 {
     [System.Serializable]
-    public abstract class RBTUnitBehaviour : MonoBehaviour
+    public abstract class UnitBehaviour : ScriptableObject
     {
         public virtual void OnCommandGroupCreated(CommandGroup commandGroup) { }
         public virtual void OnUpdate(CommandGroup group) { }

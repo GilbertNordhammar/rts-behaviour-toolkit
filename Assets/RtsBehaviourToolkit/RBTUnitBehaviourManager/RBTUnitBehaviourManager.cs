@@ -18,19 +18,20 @@ namespace RtsBehaviourToolkit
         bool _showUnitGrid = false;
         [SerializeField]
         bool _showPaths = false;
+        [SerializeField]
+        UnitBehaviour[] _behaviours;
 
         // Public
         public static RBTUnitBehaviourManager Instance { get; private set; }
 
         // Private
-        List<RBTUnitBehaviour> _unitBehaviours;
         List<CommandGroup> _commandGroups = new List<CommandGroup>();
         UnitGrid _unitGrid = new UnitGrid();
 
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
             var commandGroups = CalcCommandgroups(evnt.Units, _subgroupDistance, evnt.Position);
-            foreach (var behaviour in _unitBehaviours)
+            foreach (var behaviour in _behaviours)
             {
                 foreach (var group in commandGroups)
                 {
@@ -134,8 +135,6 @@ namespace RtsBehaviourToolkit
             }
             else Instance = this;
 
-            _unitBehaviours = GetComponentsInChildren<RBTUnitBehaviour>().ToList();
-
             RBTUnit.OnActivated += (evnt) =>
             {
                 _unitGrid.Add(evnt.sender);
@@ -145,6 +144,9 @@ namespace RtsBehaviourToolkit
             {
                 _unitGrid.Remove(evnt.sender);
             };
+
+            for (int i = 0; i < _behaviours.Length; i++)
+                _behaviours[i] = Instantiate(_behaviours[i]);
         }
 
         void Update()
@@ -161,7 +163,7 @@ namespace RtsBehaviourToolkit
 
             foreach (var commandGroup in _commandGroups)
             {
-                foreach (var behaviour in _unitBehaviours)
+                foreach (var behaviour in _behaviours)
                     behaviour.OnUpdate(commandGroup);
             }
         }
