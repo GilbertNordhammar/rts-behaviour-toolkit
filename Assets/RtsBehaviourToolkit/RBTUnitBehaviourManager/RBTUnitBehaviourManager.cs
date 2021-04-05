@@ -14,6 +14,10 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         [Min(0f)]
         float _subgroupDistance = 2f;
+        [SerializeField]
+        bool _showUnitGrid = false;
+        [SerializeField]
+        bool _showPaths = false;
 
         // Public
         public static RBTUnitBehaviourManager Instance { get; private set; }
@@ -139,12 +143,23 @@ namespace RtsBehaviourToolkit
             var originalColor = Gizmos.color;
             Gizmos.color = Color.red;
 
-            if (_commandGroups.Count > 0)
+            if (_showPaths)
             {
                 foreach (var group in _commandGroups)
                 {
                     foreach (var commandUnit in group.Units)
                     {
+                        for (int i = 0; i < commandUnit.Path.Length; i++)
+                        {
+                            var corner1 = commandUnit.Path[i];
+                            Gizmos.DrawSphere(corner1, 0.2f);
+                            if ((i + 1) < commandUnit.Path.Length)
+                            {
+                                var corner2 = commandUnit.Path[i + 1];
+                                Gizmos.DrawSphere(corner2, 0.3f);
+                                Gizmos.DrawLine(corner1, corner2);
+                            }
+                        }
                         foreach (var corner in commandUnit.Path)
                         {
                             Gizmos.DrawSphere(corner, 0.3f);
@@ -153,7 +168,9 @@ namespace RtsBehaviourToolkit
                 }
             }
 
-            _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
+
+            if (_showUnitGrid)
+                _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
 
             Gizmos.color = originalColor;
         }
