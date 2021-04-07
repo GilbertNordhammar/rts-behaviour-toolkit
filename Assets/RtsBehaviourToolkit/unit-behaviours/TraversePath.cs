@@ -33,7 +33,7 @@ namespace RtsBehaviourToolkit
                     evnt.unit.CurrentPath.Nodes[nextCornerIndex] = evnt.unit.CurrentPath.Nodes[cornerIndex];
                 }
 
-                var mask = RBTConfig.WalkableMask;
+                var mask = RBTConfig.WalkableMask | RBTConfig.UnitMask;
                 mask = ~mask;
                 var currentPos = evnt.previousCorner;
                 var posOffset = evnt.unit.CurrentPath.NextCorner - currentPos;
@@ -56,7 +56,7 @@ namespace RtsBehaviourToolkit
                 // var direction = unit.OffsetToNextCorner.normalized;
                 var direction = (unit.CurrentPath.NextCorner - unit.Unit.transform.position).normalized;
 
-                unit.Unit.AddMovement(direction);
+                unit.Unit.AddMovement(_weight * direction);
             }
         }
     }

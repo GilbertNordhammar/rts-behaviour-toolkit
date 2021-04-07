@@ -8,6 +8,7 @@ using UnityEngine.AI;
 
 namespace RtsBehaviourToolkit
 {
+    [Serializable]
     public partial class CommandGroup
     {
         public CommandGroup(List<CommandUnit> units)
@@ -51,6 +52,7 @@ namespace RtsBehaviourToolkit
         public string Id { get; } = System.Guid.NewGuid().ToString();
     }
 
+    [Serializable]
     public class CommandUnit
     {
         // Public

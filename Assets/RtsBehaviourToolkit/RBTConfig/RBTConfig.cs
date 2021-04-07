@@ -6,11 +6,13 @@ namespace RtsBehaviourToolkit
 {
     public class RBTConfig : MonoBehaviour
     {
-        // Unity editor
+        // Inspector
         [SerializeField]
         LayerMask _walkableMask;
         [SerializeField]
         LayerMask _terrainMask;
+        [SerializeField]
+        LayerMask _unitMask;
 
         // Unity functions
         void Awake()
@@ -24,12 +26,12 @@ namespace RtsBehaviourToolkit
             else Instance = this;
         }
 
-        // Private
-        public static RBTConfig Instance { get; private set; }
-
         // Public
+        public static RBTConfig Instance { get; private set; }
         public static LayerMask WalkableMask { get => Instance._walkableMask; }
         public static LayerMask TerrainMask { get => Instance._walkableMask; }
+        public static LayerMask UnitMask { get => Instance._unitMask; }
+
     }
 }
 

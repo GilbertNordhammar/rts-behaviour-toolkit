@@ -44,6 +44,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _subgroupDistance: 2
-  _showUnitGrid: 0
-  _showPaths: 0
-  _behaviours: []
+  _drawUnitGrid: 0
+  _drawPaths: 0
+  _drawBehaviours: 1
+  _behaviours:
+  - {fileID: 11400000, guid: 5ab4bf4b6c26a754ca54f2140d99baa0, type: 2}
+  - {fileID: 11400000, guid: 012633e45a701f948a5bb5832a563ea1, type: 2}

@@ -89,6 +89,8 @@ namespace RtsBehaviourToolkit
 
         public HashSet<RBTUnit> FindNear(Vector3 position, Vector3 bounds)
         {
+            bounds = new Vector3(Mathf.Max(0, bounds.x), Mathf.Max(0, bounds.y), Mathf.Max(0, bounds.z));
+            // TODO: Base minCell & maxCell on cell size
             var minCell = GetCellIndex(position - bounds);
             var maxCell = GetCellIndex(position + bounds);
             var nearbyUnits = new HashSet<RBTUnit>();
@@ -100,9 +102,14 @@ namespace RtsBehaviourToolkit
                     {
                         CellNode cellNode;
                         _indexToCell.TryGetValue(new Vector3Int(x, y, z), out cellNode);
+
                         while (cellNode != null)
                         {
-                            nearbyUnits.Add(cellNode.unit);
+                            var offset = position - cellNode.unit.transform.position;
+                            offset = new Vector3(Mathf.Max(0, offset.x), Mathf.Max(0, offset.y), Mathf.Max(0, offset.z));
+                            bool withinBounds = offset.x < bounds.x || offset.y < bounds.y || offset.z < bounds.z;
+                            if (withinBounds)
+                                nearbyUnits.Add(cellNode.unit);
                             cellNode = cellNode.next;
                         }
                     }

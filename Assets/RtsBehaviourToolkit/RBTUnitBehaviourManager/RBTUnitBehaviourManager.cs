@@ -14,28 +14,42 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         [Min(0f)]
         float _subgroupDistance = 2f;
+
         [SerializeField]
-        bool _showUnitGrid = false;
+        bool _drawUnitGrid = false;
+
         [SerializeField]
-        bool _showPaths = false;
+        bool _drawPaths = false;
+
         [SerializeField]
-        UnitBehaviour[] _behaviours;
+        bool _drawBehaviours;
+        [SerializeField]
+        BehaviourEntry[] _behaviours;
 
         // Public
         public static RBTUnitBehaviourManager Instance { get; private set; }
+        public static UnitGrid UnitGrid { get => Instance._unitGrid; }
 
         // Private
         List<CommandGroup> _commandGroups = new List<CommandGroup>();
         UnitGrid _unitGrid = new UnitGrid();
 
+        [System.Serializable]
+        class BehaviourEntry
+        {
+            public bool enabled = true;
+            public UnitBehaviour behaviour;
+        }
+
         void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
         {
             var commandGroups = CalcCommandgroups(evnt.Units, _subgroupDistance, evnt.Position);
-            foreach (var behaviour in _behaviours)
+            foreach (var behaviourEntry in _behaviours)
             {
+                if (!behaviourEntry.enabled) continue;
                 foreach (var group in commandGroups)
                 {
-                    behaviour.OnCommandGroupCreated(group);
+                    behaviourEntry.behaviour.OnCommandGroupCreated(group);
                 }
             }
             _commandGroups.AddRange(commandGroups);
@@ -146,7 +160,7 @@ namespace RtsBehaviourToolkit
             };
 
             for (int i = 0; i < _behaviours.Length; i++)
-                _behaviours[i] = Instantiate(_behaviours[i]);
+                _behaviours[i].behaviour = Instantiate(_behaviours[i].behaviour);
         }
 
         void Update()
@@ -163,8 +177,11 @@ namespace RtsBehaviourToolkit
 
             foreach (var commandGroup in _commandGroups)
             {
-                foreach (var behaviour in _behaviours)
-                    behaviour.OnUpdate(commandGroup);
+                foreach (var behaviourEntry in _behaviours)
+                {
+                    if (behaviourEntry.enabled)
+                        behaviourEntry.behaviour.OnUpdate(commandGroup);
+                }
             }
         }
 
@@ -185,30 +202,37 @@ namespace RtsBehaviourToolkit
             var originalColor = Gizmos.color;
             Gizmos.color = Color.red;
 
-            if (_showPaths)
+
+            foreach (var group in _commandGroups)
             {
-                foreach (var group in _commandGroups)
+                if (_drawBehaviours)
                 {
-                    foreach (var commandUnit in group.Units)
+                    foreach (var behaviourentry in _behaviours)
                     {
-                        var pathNodes = commandUnit.PathQueue.Last().Nodes;
-                        for (int i = 0; i < pathNodes.Length; i++)
+                        if (behaviourentry.enabled)
+                            behaviourentry.behaviour.DrawGizmos(group);
+                    }
+                }
+
+                if (!_drawPaths) continue;
+                foreach (var commandUnit in group.Units)
+                {
+                    var pathNodes = commandUnit.PathQueue.Last().Nodes;
+                    for (int i = 0; i < pathNodes.Length; i++)
+                    {
+                        var node1 = pathNodes[i];
+                        Gizmos.DrawSphere(node1, 0.2f);
+                        if ((i + 1) < pathNodes.Length)
                         {
-                            var node1 = pathNodes[i];
-                            Gizmos.DrawSphere(node1, 0.2f);
-                            if ((i + 1) < pathNodes.Length)
-                            {
-                                var node2 = pathNodes[i + 1];
-                                Gizmos.DrawSphere(node2, 0.2f);
-                                Gizmos.DrawLine(node1, node2);
-                            }
+                            var node2 = pathNodes[i + 1];
+                            Gizmos.DrawSphere(node2, 0.2f);
+                            Gizmos.DrawLine(node1, node2);
                         }
                     }
                 }
             }
 
-
-            if (_showUnitGrid)
+            if (_drawUnitGrid)
                 _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
 
             Gizmos.color = originalColor;

@@ -13,7 +13,8 @@ namespace RtsBehaviourToolkit
         }
 
         public Vector3 Center { get => _transform.position + _bounds.center; }
-        public Bounds Bounds { get => _bounds; }
+        public Vector3 Extents { get => Vector3.Scale(_bounds.extents, _transform.localScale); }
+        public Vector3 Size { get => Vector3.Scale(_bounds.size, _transform.localScale); }
 
         /// <summary>
         /// Returns [(x,y,z), (x,y,-z), (-x, y,-z), (-x,y,z), (x,-y,z), (x,-y,-z), (-x, -y,-z), (-x,-y,z)]

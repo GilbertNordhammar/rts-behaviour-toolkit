@@ -9,6 +9,7 @@ namespace RtsBehaviourToolkit
     {
         public virtual void OnCommandGroupCreated(CommandGroup commandGroup) { }
         public virtual void OnUpdate(CommandGroup group) { }
+        public virtual void DrawGizmos(CommandGroup group) { }
     }
 }
 
