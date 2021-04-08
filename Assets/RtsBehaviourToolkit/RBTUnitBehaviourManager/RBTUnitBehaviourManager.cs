@@ -5,60 +5,46 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
+
 namespace RtsBehaviourToolkit
 {
     [RequireComponent(typeof(NavMesh))]
-    public partial class RBTUnitBehaviourManager : MonoBehaviour
+    public sealed class RBTUnitBehaviourManager : UnitBehaviourManagerBase
     {
-        // Unity editor
+        // Inspector
         [SerializeField]
         [Min(0f)]
         float _subgroupDistance = 2f;
-
-        [SerializeField]
-        bool _drawUnitGrid = false;
-
-        [SerializeField]
-        bool _drawPaths = false;
-
-        [SerializeField]
-        bool _drawBehaviours;
-        [SerializeField]
-        BehaviourEntry[] _behaviours;
 
         // Public
         public static RBTUnitBehaviourManager Instance { get; private set; }
         public static UnitGrid UnitGrid { get => Instance._unitGrid; }
 
-        // Private
-        List<CommandGroup> _commandGroups = new List<CommandGroup>();
-        UnitGrid _unitGrid = new UnitGrid();
-
-        [System.Serializable]
-        class BehaviourEntry
+        // Protected
+        public override void CommandMovement(List<RBTUnit> units, Vector3 destination)
         {
-            public bool enabled = true;
-            public UnitBehaviour behaviour;
+            // TODO
         }
 
-        void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
+        public override void CommandPatrol(List<RBTUnit> units, Vector3 destination)
         {
-            var commandGroups = CalcCommandgroups(evnt.Units, _subgroupDistance, evnt.Position);
-            foreach (var behaviourEntry in _behaviours)
-            {
-                if (!behaviourEntry.enabled) continue;
-                foreach (var group in commandGroups)
-                {
-                    behaviourEntry.behaviour.OnCommandGroupCreated(group);
-                }
-            }
-            _commandGroups.AddRange(commandGroups);
+            // TODO
         }
 
-        List<CommandGroup> CalcCommandgroups(List<RBTUnit> units, float maxDistance, Vector3 destination)
+        public override void CommandAttack(List<RBTUnit> units, RBTUnit unit)
+        {
+            // TODO
+        }
+
+        public override void CommandFollow(List<RBTUnit> units, GameObject obj)
+        {
+            // TODO
+        }
+
+        protected override List<CommandGroup> GenerateCommandGroups(List<RBTUnit> units, Vector3 destination)
         {
             var unitsWithoutGroup = new HashSet<RBTUnit>(units);
-            var b = Mathf.Sqrt(Mathf.Pow(maxDistance, 2) / 2);
+            var b = Mathf.Sqrt(Mathf.Pow(_subgroupDistance, 2) / 2);
             var bounds = new Vector3(b, 0, b);
 
             Action<RBTUnit, List<RBTUnit>> calcConnectingUnits = null;
@@ -83,13 +69,14 @@ namespace RtsBehaviourToolkit
                     calcConnectingUnits(unit, unitsInCommandGroup);
                     var commandUnits = CalcCommandUnits(unitsInCommandGroup, destination);
                     if (commandUnits.Count > 0)
-                        commandGroups.Add(new CommandGroup(commandUnits));
+                        commandGroups.Add(new CommandGroup(commandUnits, destination, CommandType.GoToAndStop));
                 }
             }
 
             return commandGroups;
         }
 
+        // Private
         List<CommandUnit> CalcCommandUnits(List<RBTUnit> units, Vector3 destination)
         {
             var center = new Vector3();
@@ -120,27 +107,10 @@ namespace RtsBehaviourToolkit
             return commandUnits;
         }
 
-        void UpdateCommandGroups()
-        {
-            var commandGroupsToRemove = new List<CommandGroup>();
-            foreach (var commandGroup in _commandGroups)
-            {
-                commandGroup.Update();
-                if (commandGroup.Units.Count == 0)
-                    commandGroupsToRemove.Add(commandGroup);
-            }
-
-            foreach (var group in commandGroupsToRemove)
-            {
-                foreach (var unit in group.Units)
-                    unit.Unit.ClearCommandGroup();
-                _commandGroups.Remove(group);
-            }
-        }
-
         // Unity functions
-        void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (Instance)
             {
                 Debug.LogWarning($"RBTUnitBehaviourManager on '{gameObject.name}' was destroyed as there's already one attached on '{Instance.gameObject.name}'");
@@ -148,95 +118,6 @@ namespace RtsBehaviourToolkit
                 return;
             }
             else Instance = this;
-
-            RBTUnit.OnActivated += (evnt) =>
-            {
-                _unitGrid.Add(evnt.sender);
-            };
-
-            RBTUnit.OnDeactivated += (evnt) =>
-            {
-                _unitGrid.Remove(evnt.sender);
-            };
-
-            for (int i = 0; i < _behaviours.Length; i++)
-                _behaviours[i].behaviour = Instantiate(_behaviours[i].behaviour);
-        }
-
-        void Update()
-        {
-            // Gizmos flash like crazy if this is put in FixedUpdate(),
-            // but performance improves
-            foreach (var unit in RBTUnit.ActiveUnits)
-                _unitGrid.Update(unit);
-        }
-
-        void FixedUpdate()
-        {
-            UpdateCommandGroups();
-
-            foreach (var commandGroup in _commandGroups)
-            {
-                foreach (var behaviourEntry in _behaviours)
-                {
-                    if (behaviourEntry.enabled)
-                        behaviourEntry.behaviour.OnUpdate(commandGroup);
-                }
-            }
-        }
-
-        // Unity editor functions
-        void Start()
-        {
-            if (RBTUnitCommander.Instance)
-                RBTUnitCommander.Instance.OnCommandGiven += HandleOnCommandGiven;
-            else
-                Debug.LogError("RBTUnitCommander couldn't subscribe to RBTUnitCommander.Instance.OnCommandGiven");
-
-            foreach (var unit in RBTUnit.ActiveUnits)
-                _unitGrid.Add(unit);
-        }
-
-        void OnDrawGizmos()
-        {
-            var originalColor = Gizmos.color;
-            Gizmos.color = Color.red;
-
-
-            foreach (var group in _commandGroups)
-            {
-                if (_drawBehaviours)
-                {
-                    foreach (var behaviourentry in _behaviours)
-                    {
-                        if (behaviourentry.enabled)
-                            behaviourentry.behaviour.DrawGizmos(group);
-                    }
-                }
-
-                if (!_drawPaths) continue;
-                foreach (var commandUnit in group.Units)
-                {
-                    var pathNodes = commandUnit.PathQueue.Last().Nodes;
-                    for (int i = 0; i < pathNodes.Length; i++)
-                    {
-                        var node1 = pathNodes[i];
-                        Gizmos.DrawSphere(node1, 0.2f);
-                        if ((i + 1) < pathNodes.Length)
-                        {
-                            var node2 = pathNodes[i + 1];
-                            Gizmos.DrawSphere(node2, 0.2f);
-                            Gizmos.DrawLine(node1, node2);
-                        }
-                    }
-                }
-            }
-
-            if (_drawUnitGrid)
-                _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
-
-            Gizmos.color = originalColor;
         }
     }
 }
-

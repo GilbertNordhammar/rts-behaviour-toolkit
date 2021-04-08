@@ -8,20 +8,20 @@ namespace RtsBehaviourToolkit
     public partial class CommandGroup
     {
         // Public
-        public event Action<NewCornerEvent> OnNewCorner
+        public event Action<NewPathNodeEvent> OnNewPathNode
         {
             add
             {
-                lock (_onNewCornerLock)
+                lock (_onNewPathNodeLock)
                 {
-                    _onNewCorner += value;
+                    _onNewPathNode += value;
                 }
             }
             remove
             {
-                lock (_onNewCornerLock)
+                lock (_onNewPathNodeLock)
                 {
-                    _onNewCorner -= value;
+                    _onNewPathNode -= value;
                 }
             }
         }
@@ -44,20 +44,20 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public event Action<FinishedEvent> OnFinished
+        public event Action<PathTraversedEvent> OnPathTraversed
         {
             add
             {
-                lock (_onFinishedLock)
+                lock (_onPathTraversedLock)
                 {
-                    _onFinished += value;
+                    _onPathTraversed += value;
                 }
             }
             remove
             {
-                lock (_onFinishedLock)
+                lock (_onPathTraversedLock)
                 {
-                    _onFinished -= value;
+                    _onPathTraversed -= value;
                 }
             }
         }
@@ -73,9 +73,9 @@ namespace RtsBehaviourToolkit
             public readonly CommandUnit unit;
         }
 
-        public class NewCornerEvent : Event
+        public class NewPathNodeEvent : Event
         {
-            public NewCornerEvent(CommandGroup sender, CommandUnit unit, Vector3 prevCorner)
+            public NewPathNodeEvent(CommandGroup sender, CommandUnit unit, Vector3 prevCorner)
                 : base(sender, unit)
             {
                 previousCorner = prevCorner;
@@ -93,20 +93,23 @@ namespace RtsBehaviourToolkit
             public readonly string previousGroupId;
         }
 
-        public class FinishedEvent : Event
+        public class PathTraversedEvent : Event
         {
-            public FinishedEvent(CommandGroup sender, CommandUnit unit)
+            public PathTraversedEvent(CommandGroup sender, CommandUnit unit, bool lastPath)
                 : base(sender, unit)
             {
+                LastPath = lastPath;
             }
+
+            bool LastPath { get; }
         }
 
         // Private
-        Action<NewCornerEvent> _onNewCorner = delegate { };
-        readonly object _onNewCornerLock = new object();
+        Action<NewPathNodeEvent> _onNewPathNode = delegate { };
+        readonly object _onNewPathNodeLock = new object();
         Action<NewGroupEvent> _onNewGroup = delegate { };
         readonly object _onNewGroupLock = new object();
-        Action<FinishedEvent> _onFinished = delegate { };
-        readonly object _onFinishedLock = new object();
+        Action<PathTraversedEvent> _onPathTraversed = delegate { };
+        readonly object _onPathTraversedLock = new object();
     }
 }

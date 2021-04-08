@@ -8,12 +8,20 @@ using UnityEngine.AI;
 
 namespace RtsBehaviourToolkit
 {
+    public enum CommandType
+    {
+        Attack, Follow, Patrol, GoToAndStop
+    }
+
     [Serializable]
     public partial class CommandGroup
     {
-        public CommandGroup(List<CommandUnit> units)
+        public CommandGroup(List<CommandUnit> units, Vector3 destination, CommandType commandType)
         {
             Units = new List<CommandUnit>(units);
+            Destination = destination;
+            Command = commandType;
+
             foreach (var unit in Units)
             {
                 unit.Unit.AssignCommandGroup(Id);
@@ -22,33 +30,43 @@ namespace RtsBehaviourToolkit
 
         public void Update()
         {
-            var unitsToRemove = new List<CommandUnit>();
+            var finishedUnits = new List<CommandUnit>();
             foreach (var unit in Units)
             {
-                var prevCorner = unit.CurrentPath.NextCorner;
+                var prevPathNode = unit.CurrentPath.NextCorner;
+                var status = unit.Update();
 
-                unit.Update();
-
-                if (prevCorner != unit.CurrentPath.NextCorner)
-                    _onNewCorner.Invoke(new NewCornerEvent(this, unit, prevCorner));
-
-                if (unit.Finished || unit.Unit.CommandGroupId != Id)
+                if (status.HasFlag(CommandUnit.MovementStatus.NewPathNode))
                 {
-                    if (unit.Finished)
-                        _onFinished.Invoke(new FinishedEvent(this, unit));
+                    _onNewPathNode.Invoke(new NewPathNodeEvent(this, unit, prevPathNode));
+                }
+                if (status.HasFlag(CommandUnit.MovementStatus.NewPath))
+                    _onPathTraversed.Invoke(new PathTraversedEvent(this, unit, false));
+                if (status.HasFlag(CommandUnit.MovementStatus.LastPathTraversed))
+                {
+                    _onPathTraversed.Invoke(new PathTraversedEvent(this, unit, true));
+                    if (Command == CommandType.Patrol)
+                        unit.CurrentPath = new Path(unit.CurrentPath.Nodes.Reverse().ToArray());
                     else
-                        _onNewGroup.Invoke(new NewGroupEvent(this, unit));
-                    unitsToRemove.Add(unit);
+                        finishedUnits.Add(unit);
+                }
+
+                if (unit.Unit.CommandGroupId != Id)
+                {
+                    _onNewGroup.Invoke(new NewGroupEvent(this, unit));
+                    finishedUnits.Add(unit);
                 }
             }
 
-            foreach (var unit in unitsToRemove)
+            foreach (var unit in finishedUnits)
             {
                 Units.Remove(unit);
             }
         }
 
-        public List<CommandUnit> Units { get; private set; } = new List<CommandUnit>();
+        public List<CommandUnit> Units { get; } = new List<CommandUnit>();
+        public Vector3 Destination { get; }
+        public CommandType Command { get; }
         public string Id { get; } = System.Guid.NewGuid().ToString();
     }
 
@@ -70,7 +88,11 @@ namespace RtsBehaviourToolkit
         public RBTUnit Unit { get; }
 
         public List<Path> PathQueue { get; } = new List<Path>();
-        public Path CurrentPath { get => PathQueue.Last(); }
+        public Path CurrentPath
+        {
+            get => PathQueue.Last();
+            set => PathQueue[PathQueue.Count - 1] = value;
+        }
 
         public void PushPath(Path path)
         {
@@ -82,8 +104,14 @@ namespace RtsBehaviourToolkit
             PathQueue.Add(new Path(nodes));
         }
 
-        public void Update()
+        public enum MovementStatus
         {
+            None = 0, NewPathNode = 1, NewPath = 2, LastPathTraversed = 4
+        }
+
+        public MovementStatus Update()
+        {
+            var status = MovementStatus.None;
             var absOffset = CurrentPath.NextCorner - Unit.transform.position;
             absOffset = new Vector3(Mathf.Abs(absOffset.x), Mathf.Abs(absOffset.y), Mathf.Abs(absOffset.z));
             if (absOffset.x < 0.1 && absOffset.z < 0.1 && absOffset.y < 1.0) // base "absOffset.y < 1.0" off of unit height
@@ -92,23 +120,22 @@ namespace RtsBehaviourToolkit
                 if (CurrentPath.Traversed)
                 {
                     if (PathQueue.Count == 1)
-                        Finished = true;
+                        status |= MovementStatus.LastPathTraversed;
                     else
+                    {
                         PathQueue.RemoveAt(PathQueue.Count - 1);
+                        status |= MovementStatus.NewPath | MovementStatus.NewPathNode;
+                    }
                 }
+                else status |= MovementStatus.NewPathNode;
             }
+
+            return status;
         }
 
         public int NextCornerIndex
         {
             get => CurrentPath.NextCornerIndex;
         }
-
-        public void MarkAsFinished()
-        {
-            Finished = true;
-        }
-
-        public bool Finished { get; private set; }
     }
 }

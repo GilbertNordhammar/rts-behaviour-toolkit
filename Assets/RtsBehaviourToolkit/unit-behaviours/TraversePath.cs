@@ -15,7 +15,7 @@ namespace RtsBehaviourToolkit
 
         public override void OnCommandGroupCreated(CommandGroup group)
         {
-            group.OnNewCorner += (evnt) =>
+            group.OnNewPathNode += (evnt) =>
             {
                 // TODO: Clean this up
                 var navMeshMask = 1 << NavMesh.GetAreaFromName("Walkable");

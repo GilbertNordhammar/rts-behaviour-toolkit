@@ -3160,8 +3160,23 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
+      propertyPath: _showPaths
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
+      propertyPath: _showUnitGrid
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
       propertyPath: _be.Array.size
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
+      propertyPath: _showBehaviours
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
