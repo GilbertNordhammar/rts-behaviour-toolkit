@@ -21,29 +21,9 @@ namespace RtsBehaviourToolkit
         public static UnitGrid UnitGrid { get => Instance._unitGrid; }
 
         // Protected
-        public override void CommandMovement(List<RBTUnit> units, Vector3 destination)
+        protected override List<List<CommandUnit>> CalcUnitsGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination)
         {
-            // TODO
-        }
-
-        public override void CommandPatrol(List<RBTUnit> units, Vector3 destination)
-        {
-            // TODO
-        }
-
-        public override void CommandAttack(List<RBTUnit> units, RBTUnit unit)
-        {
-            // TODO
-        }
-
-        public override void CommandFollow(List<RBTUnit> units, GameObject obj)
-        {
-            // TODO
-        }
-
-        protected override List<CommandGroup> GenerateCommandGroups(List<RBTUnit> units, Vector3 destination)
-        {
-            var unitsWithoutGroup = new HashSet<RBTUnit>(units);
+            var unitsWithoutGroup = new HashSet<RBTUnit>(commandedUnits);
             var b = Mathf.Sqrt(Mathf.Pow(_subgroupDistance, 2) / 2);
             var bounds = new Vector3(b, 0, b);
 
@@ -60,8 +40,8 @@ namespace RtsBehaviourToolkit
                 }
             };
 
-            var commandGroups = new List<CommandGroup>();
-            foreach (var unit in units)
+            var unitGroups = new List<List<CommandUnit>>();
+            foreach (var unit in commandedUnits)
             {
                 if (unitsWithoutGroup.Contains(unit))
                 {
@@ -69,11 +49,11 @@ namespace RtsBehaviourToolkit
                     calcConnectingUnits(unit, unitsInCommandGroup);
                     var commandUnits = CalcCommandUnits(unitsInCommandGroup, destination);
                     if (commandUnits.Count > 0)
-                        commandGroups.Add(new CommandGroup(commandUnits, destination, CommandType.GoToAndStop));
+                        unitGroups.Add(commandUnits);
                 }
             }
 
-            return commandGroups;
+            return unitGroups;
         }
 
         // Private

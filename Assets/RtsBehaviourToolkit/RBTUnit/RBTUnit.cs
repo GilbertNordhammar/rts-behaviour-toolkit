@@ -7,7 +7,7 @@ namespace RtsBehaviourToolkit
 {
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
-    public partial class RBTUnit : MonoBehaviour
+    public partial class RBTUnit : MonoBehaviour, IAttackable
     {
         // Editor fields
         [SerializeField]
@@ -17,6 +17,19 @@ namespace RtsBehaviourToolkit
         Bounds _bounds;
 
         // Public
+        public void Damage(int damage)
+        {
+
+        }
+
+        public int Health { get; set; }
+
+        public int MaximumHealth { get; set; }
+
+        public bool Alive { get; }
+
+        public Vector3 Position { get => transform.position; }
+
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
 
         public UnitBounds Bounds { get; private set; }

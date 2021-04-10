@@ -16,10 +16,12 @@ namespace RtsBehaviourToolkit
         public Vector3[] Nodes { get; }
         public Vector3 NextCorner
         {
-            get
-            {
-                return Nodes[_indexNextCorner];
-            }
+            get => Nodes[_indexNextCorner];
+        }
+
+        public Vector3 PreviousCorner
+        {
+            get => Nodes[Mathf.Max(0, _indexNextCorner - 1)];
         }
 
         public void Increment()

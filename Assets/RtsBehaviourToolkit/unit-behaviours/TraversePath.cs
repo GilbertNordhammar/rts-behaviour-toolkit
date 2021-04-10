@@ -35,14 +35,13 @@ namespace RtsBehaviourToolkit
 
                 var mask = RBTConfig.WalkableMask | RBTConfig.UnitMask;
                 mask = ~mask;
-                var currentPos = evnt.previousCorner;
-                var posOffset = evnt.unit.CurrentPath.NextCorner - currentPos;
+                var posOffset = evnt.unit.CurrentPath.NextCorner - evnt.unit.CurrentPath.PreviousCorner;
                 RaycastHit hit;
-                var blockedPath = Physics.Raycast(evnt.previousCorner, posOffset.normalized, out hit, posOffset.magnitude, mask);
+                var blockedPath = Physics.Raycast(evnt.unit.CurrentPath.PreviousCorner, posOffset.normalized, out hit, posOffset.magnitude, mask);
                 if (blockedPath)
                 {
                     var path = new NavMeshPath();
-                    NavMesh.CalculatePath(currentPos, evnt.unit.CurrentPath.NextCorner, NavMesh.AllAreas, path);
+                    NavMesh.CalculatePath(evnt.unit.CurrentPath.PreviousCorner, evnt.unit.CurrentPath.NextCorner, NavMesh.AllAreas, path);
                     if (path.status == NavMeshPathStatus.PathComplete)
                         evnt.unit.PushPath(path.corners);
                 }

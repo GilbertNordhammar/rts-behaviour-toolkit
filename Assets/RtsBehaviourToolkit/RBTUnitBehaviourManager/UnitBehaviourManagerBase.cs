@@ -24,9 +24,30 @@ namespace RtsBehaviourToolkit
         protected BehaviourEntry[] _behaviours;
 
         // Protected
-        protected List<CommandGroup> _commandGroups = new List<CommandGroup>();
+
+        protected class CommandGroupList : List<CommandGroup>
+        {
+            public new void Add(CommandGroup item)
+            {
+                base.Add(item);
+                foreach (var entry in _behaviourEntries)
+                {
+                    if (entry.enabled)
+                        entry.behaviour.OnCommandGroupCreated(item);
+                }
+            }
+
+            public void Init(BehaviourEntry[] behaviourEntries)
+            {
+                _behaviourEntries = behaviourEntries;
+            }
+
+            BehaviourEntry[] _behaviourEntries;
+        }
+
+        protected CommandGroupList _commandGroups = new CommandGroupList();
         protected UnitGrid _unitGrid = new UnitGrid();
-        protected abstract List<CommandGroup> GenerateCommandGroups(List<RBTUnit> units, Vector3 destination);
+        protected abstract List<List<CommandUnit>> CalcUnitsGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination);
 
         [System.Serializable]
         protected class BehaviourEntry
@@ -36,26 +57,38 @@ namespace RtsBehaviourToolkit
         }
 
         // Abstract interface
-        public abstract void CommandMovement(List<RBTUnit> units, Vector3 destination);
-        public abstract void CommandPatrol(List<RBTUnit> units, Vector3 destination);
-        public abstract void CommandAttack(List<RBTUnit> units, RBTUnit unit);
-        public abstract void CommandFollow(List<RBTUnit> units, GameObject obj);
-
-        // Private
-        void HandleOnCommandGiven(RBTUnitCommander.CommandGivenEvent evnt)
+        public virtual void CommandGoTo(List<RBTUnit> units, Vector3 destination)
         {
-            var commandGroups = GenerateCommandGroups(evnt.Units, evnt.Position);
-            foreach (var behaviourEntry in _behaviours)
-            {
-                if (!behaviourEntry.enabled) continue;
-                foreach (var group in commandGroups)
-                {
-                    behaviourEntry.behaviour.OnCommandGroupCreated(group);
-                }
-            }
-            _commandGroups.AddRange(commandGroups);
+            var unitGroups = CalcUnitsGroupsPerCommand(units, destination);
+            _commandGroups.Capacity += unitGroups.Count;
+            foreach (var group in unitGroups)
+                _commandGroups.Add(new GoToGroup(group, destination));
         }
 
+        public virtual void CommandPatrol(List<RBTUnit> units, Vector3 destination)
+        {
+            var unitGroups = CalcUnitsGroupsPerCommand(units, destination);
+            _commandGroups.Capacity += unitGroups.Count;
+            foreach (var group in unitGroups)
+                _commandGroups.Add(new PatrolGroup(group, destination));
+        }
+
+        public virtual void CommandAttack(List<RBTUnit> units, IAttackable target)
+        {
+            var unitGroups = CalcUnitsGroupsPerCommand(units, target.Position);
+            _commandGroups.Capacity += unitGroups.Count;
+            foreach (var group in unitGroups)
+                _commandGroups.Add(new AttackGroup(group, target));
+        }
+        public virtual void CommandFollow(List<RBTUnit> units, GameObject target)
+        {
+            var unitGroups = CalcUnitsGroupsPerCommand(units, target.transform.position);
+            _commandGroups.Capacity += unitGroups.Count;
+            foreach (var group in unitGroups)
+                _commandGroups.Add(new FollowGroup(group, target));
+        }
+
+        // Private
         void UpdateCommandGroups()
         {
             var commandGroupsToRemove = new List<CommandGroup>();
@@ -89,6 +122,8 @@ namespace RtsBehaviourToolkit
 
             for (int i = 0; i < _behaviours.Length; i++)
                 _behaviours[i].behaviour = Instantiate(_behaviours[i].behaviour);
+
+            _commandGroups.Init(_behaviours);
         }
 
         protected virtual void Update()
@@ -116,11 +151,6 @@ namespace RtsBehaviourToolkit
         // Unity editor functions
         protected virtual void Start()
         {
-            if (RBTUnitCommander.Instance)
-                RBTUnitCommander.Instance.OnCommandGiven += HandleOnCommandGiven;
-            else
-                Debug.LogWarning($"Behaviour manager on {gameObject.name} couldn't subscribe to RBTUnitCommander.Instance.OnCommandGiven");
-
             foreach (var unit in RBTUnit.ActiveUnits)
                 _unitGrid.Add(unit);
         }

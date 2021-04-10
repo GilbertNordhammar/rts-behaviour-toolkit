@@ -26,38 +26,56 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public event Action<NewGroupEvent> OnNewGroup
+        public event Action<UnitChangedGroupEvent> OnChangedGroup
         {
             add
             {
-                lock (_onNewGroupLock)
+                lock (_onChangedGroupLock)
                 {
-                    _onNewGroup += value;
+                    _onChangedGroup += value;
                 }
             }
             remove
             {
-                lock (_onNewGroupLock)
+                lock (_onChangedGroupLock)
                 {
-                    _onNewGroup -= value;
+                    _onChangedGroup -= value;
                 }
             }
         }
 
-        public event Action<PathTraversedEvent> OnPathTraversed
+        public event Action<NewPathEvent> OnNewPath
         {
             add
             {
-                lock (_onPathTraversedLock)
+                lock (_onNewPathLock)
                 {
-                    _onPathTraversed += value;
+                    _onNewPath += value;
                 }
             }
             remove
             {
-                lock (_onPathTraversedLock)
+                lock (_onNewPathLock)
                 {
-                    _onPathTraversed -= value;
+                    _onNewPath -= value;
+                }
+            }
+        }
+
+        public event Action<MainPathTraversedEvent> OnMainPathTraversed
+        {
+            add
+            {
+                lock (_onMainPathTraversedLock)
+                {
+                    _onMainPathTraversed += value;
+                }
+            }
+            remove
+            {
+                lock (_onMainPathTraversedLock)
+                {
+                    _onMainPathTraversed -= value;
                 }
             }
         }
@@ -75,17 +93,15 @@ namespace RtsBehaviourToolkit
 
         public class NewPathNodeEvent : Event
         {
-            public NewPathNodeEvent(CommandGroup sender, CommandUnit unit, Vector3 prevCorner)
+            public NewPathNodeEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)
             {
-                previousCorner = prevCorner;
             }
-            public readonly Vector3 previousCorner;
         }
 
-        public class NewGroupEvent : Event
+        public class UnitChangedGroupEvent : Event
         {
-            public NewGroupEvent(CommandGroup sender, CommandUnit unit)
+            public UnitChangedGroupEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)
             {
                 previousGroupId = sender.Id;
@@ -93,23 +109,30 @@ namespace RtsBehaviourToolkit
             public readonly string previousGroupId;
         }
 
-        public class PathTraversedEvent : Event
+        public class NewPathEvent : Event
         {
-            public PathTraversedEvent(CommandGroup sender, CommandUnit unit, bool lastPath)
+            public NewPathEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)
             {
-                LastPath = lastPath;
             }
+        }
 
-            bool LastPath { get; }
+        public class MainPathTraversedEvent : Event
+        {
+            public MainPathTraversedEvent(CommandGroup sender, CommandUnit unit)
+                : base(sender, unit)
+            {
+            }
         }
 
         // Private
         Action<NewPathNodeEvent> _onNewPathNode = delegate { };
         readonly object _onNewPathNodeLock = new object();
-        Action<NewGroupEvent> _onNewGroup = delegate { };
-        readonly object _onNewGroupLock = new object();
-        Action<PathTraversedEvent> _onPathTraversed = delegate { };
-        readonly object _onPathTraversedLock = new object();
+        Action<UnitChangedGroupEvent> _onChangedGroup = delegate { };
+        readonly object _onChangedGroupLock = new object();
+        Action<NewPathEvent> _onNewPath = delegate { };
+        readonly object _onNewPathLock = new object();
+        Action<MainPathTraversedEvent> _onMainPathTraversed = delegate { };
+        readonly object _onMainPathTraversedLock = new object();
     }
 }

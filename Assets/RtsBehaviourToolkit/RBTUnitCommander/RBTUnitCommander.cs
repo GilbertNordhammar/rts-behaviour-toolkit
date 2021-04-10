@@ -8,6 +8,10 @@ namespace RtsBehaviourToolkit
 {
     public class RBTUnitCommander : MonoBehaviour
     {
+        // Inspector
+        [SerializeField]
+        UnitBehaviourManagerBase _unitBehaviourManager;
+
         // Public
         public static RBTUnitCommander Instance { get; private set; }
 
@@ -65,7 +69,10 @@ namespace RtsBehaviourToolkit
                 var walkableMask = 1 << NavMesh.GetAreaFromName("Walkable");
                 var isWalkable = NavMesh.SamplePosition(clickHit.point, out navMeshHit, 1f, walkableMask);
                 if (isWalkable)
+                {
+                    _unitBehaviourManager.CommandGoTo(units, clickHit.point);
                     _onCommandGiven.Invoke(new CommandGivenEvent(this, clickHit.point, units));
+                }
             }
         }
 
@@ -79,6 +86,9 @@ namespace RtsBehaviourToolkit
                 return;
             }
             else Instance = this;
+
+            if (!_unitBehaviourManager)
+                Debug.LogWarning($"There's no unit behaviour manager assigned to RBTUnitCommander on '{gameObject.name}''");
         }
 
         void Start()
