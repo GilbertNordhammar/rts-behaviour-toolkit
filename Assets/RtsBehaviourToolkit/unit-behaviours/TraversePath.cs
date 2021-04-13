@@ -19,31 +19,42 @@ namespace RtsBehaviourToolkit
             {
                 // TODO: Clean this up
                 var navMeshMask = 1 << NavMesh.GetAreaFromName("Walkable");
-                var cornerIndex = evnt.unit.NextCornerIndex;
-                var pathLength = evnt.unit.CurrentPath.Nodes.Length;
-
-                NavMeshHit navMeshHit;
-                while (cornerIndex < pathLength && !NavMesh.SamplePosition(evnt.unit.CurrentPath.Nodes[cornerIndex], out navMeshHit, 0.01f, navMeshMask))
+                var foundNearbyPos = false;
+                var preNextIndex = evnt.unit.CurrentPath.NextNodeIndex;
+                while (!evnt.unit.CurrentPath.Traversed && !foundNearbyPos)
                 {
-                    cornerIndex++;
-                }
-                if (cornerIndex < pathLength)
-                {
-                    var nextCornerIndex = evnt.unit.CurrentPath.NextCornerIndex;
-                    evnt.unit.CurrentPath.Nodes[nextCornerIndex] = evnt.unit.CurrentPath.Nodes[cornerIndex];
+                    NavMeshHit navMeshHit;
+                    foundNearbyPos = NavMesh.SamplePosition(evnt.unit.CurrentPath.NextNode, out navMeshHit, 1f, navMeshMask); // is 1f good enough??
+                    if (foundNearbyPos)
+                        evnt.unit.CurrentPath.NextNode = navMeshHit.position;
+                    else
+                        evnt.unit.CurrentPath.Increment();
                 }
 
-                var mask = RBTConfig.WalkableMask | RBTConfig.UnitMask;
-                mask = ~mask;
-                var posOffset = evnt.unit.CurrentPath.NextCorner - evnt.unit.CurrentPath.PreviousCorner;
-                RaycastHit hit;
-                var blockedPath = Physics.Raycast(evnt.unit.CurrentPath.PreviousCorner, posOffset.normalized, out hit, posOffset.magnitude, mask);
-                if (blockedPath)
+                if (evnt.unit.CurrentPath.Traversed)
+                    return;
+
+                var invalidNextNode = preNextIndex != evnt.unit.CurrentPath.NextNodeIndex;
+
+                var blockedPath = false;
+                if (!invalidNextNode)
+                {
+                    var mask = RBTConfig.WalkableMask | RBTConfig.UnitMask;
+                    mask = ~mask;
+                    var posOffset = evnt.unit.CurrentPath.NextNode - evnt.unit.Unit.Position;
+
+                    blockedPath = Physics.Raycast(evnt.unit.Unit.Position, posOffset.normalized, posOffset.magnitude, mask);
+                }
+
+                if (blockedPath || invalidNextNode)
                 {
                     var path = new NavMeshPath();
-                    NavMesh.CalculatePath(evnt.unit.CurrentPath.PreviousCorner, evnt.unit.CurrentPath.NextCorner, NavMesh.AllAreas, path);
+                    NavMesh.CalculatePath(evnt.unit.Unit.Position, evnt.unit.CurrentPath.NextNode, NavMesh.AllAreas, path);
                     if (path.status == NavMeshPathStatus.PathComplete)
+                    {
+                        evnt.unit.CurrentPath.Increment();
                         evnt.unit.PushPath(path.corners);
+                    }
                 }
             };
         }
@@ -52,9 +63,7 @@ namespace RtsBehaviourToolkit
         {
             foreach (var unit in group.Units)
             {
-                // var direction = unit.OffsetToNextCorner.normalized;
-                var direction = (unit.CurrentPath.NextCorner - unit.Unit.transform.position).normalized;
-
+                var direction = (unit.CurrentPath.NextNode - unit.Unit.Position).normalized;
                 unit.Unit.AddMovement(_weight * direction);
             }
         }

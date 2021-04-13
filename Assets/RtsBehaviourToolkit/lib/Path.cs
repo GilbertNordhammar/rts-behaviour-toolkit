@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace RtsBehaviourToolkit
 {
@@ -10,38 +11,40 @@ namespace RtsBehaviourToolkit
         {
             Nodes = nodes;
             if (nodes.Length == 0)
-                Traversed = true;
+                Assert.AreEqual(nodes.Length, 0, "A path must be longer than 0");
         }
 
         public Vector3[] Nodes { get; }
-        public Vector3 NextCorner
+        public Vector3 NextNode
         {
-            get => Nodes[_indexNextCorner];
+            get => Nodes[NextNodeIndex];
+            set => Nodes[NextNodeIndex] = value;
         }
 
-        public Vector3 PreviousCorner
+        public Vector3 PreviousNode
         {
-            get => Nodes[Mathf.Max(0, _indexNextCorner - 1)];
+            get => Nodes[PreviousNodeIndex];
+            set => Nodes[PreviousNodeIndex] = value;
         }
 
         public void Increment()
         {
-            _indexNextCorner++;
-            if (_indexNextCorner >= Nodes.Length)
-            {
-                _indexNextCorner = Nodes.Length - 1;
-                Traversed = true;
-            }
+            _indexIncrement++;
         }
 
-        public int NextCornerIndex
+        public int NextNodeIndex
         {
-            get => _indexNextCorner;
+            get => Mathf.Min(_indexIncrement, Nodes.Length - 1);
         }
 
-        public bool Traversed { get; private set; }
+        public int PreviousNodeIndex
+        {
+            get => Mathf.Clamp(_indexIncrement - 1, 0, Nodes.Length - 1);
+        }
+
+        public bool Traversed { get => _indexIncrement >= Nodes.Length; }
 
         // Private
-        private int _indexNextCorner = 0;
+        int _indexIncrement = 0;
     }
 }

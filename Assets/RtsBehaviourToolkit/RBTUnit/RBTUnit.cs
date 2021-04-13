@@ -10,25 +10,20 @@ namespace RtsBehaviourToolkit
     public partial class RBTUnit : MonoBehaviour, IAttackable
     {
         // Editor fields
-        [SerializeField]
-        [Min(0)]
-        float _speed = 2.0f;
+        [field: SerializeField]
+        [field: Min(0)]
+        public float Speed { get; private set; } = 2.0f;
         [SerializeField]
         Bounds _bounds;
 
         // Public
-        public void Damage(int damage)
-        {
-
-        }
-
         public int Health { get; set; }
 
         public int MaximumHealth { get; set; }
 
         public bool Alive { get; }
 
-        public Vector3 Position { get => transform.position; }
+        public Vector3 Position { get => _rigidBody.position; set => _rigidBody.position = value; }
 
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
 
@@ -52,6 +47,23 @@ namespace RtsBehaviourToolkit
             _movementSum += movement;
         }
 
+        int _weights = 0;
+        Vector3 _targetPosition;
+        Vector3 _currentPosition;
+        public void AddTarget(Vector3 position, int weight)
+        {
+            weight = Mathf.Max(0, weight);
+            _targetPosition += position * weight;
+            _weights += weight;
+        }
+
+        public void AddRelativeTarget(Vector3 offset, int weight)
+        {
+            weight = Mathf.Max(0, weight);
+            _targetPosition += offset * weight;
+            _weights += weight;
+        }
+
         public bool Selected
         {
             get => _selected;
@@ -73,23 +85,13 @@ namespace RtsBehaviourToolkit
         bool _selected = false;
         Rigidbody _rigidBody;
         Vector3 _movementSum;
-        CapsuleCollider _collider;
-
-        void SetLookDirection()
-        {
-            if (_rigidBody.velocity.magnitude < 0.1f) return;
-
-            var lookDirection = _rigidBody.velocity.normalized;
-            lookDirection.y = 0;
-            transform.LookAt(transform.position + lookDirection);
-        }
 
         // Unity functions
         void Awake()
         {
             _rigidBody = GetComponent<Rigidbody>();
-            _collider = GetComponent<CapsuleCollider>();
             Bounds = new UnitBounds(transform, _bounds);
+            _currentPosition = _rigidBody.position;
         }
 
         void Start()
@@ -120,22 +122,21 @@ namespace RtsBehaviourToolkit
             _rigidBody.isKinematic = false;
 
             // Snapping unit to floor and setting surface normal
-            var surfaceNormal = new Vector3();
+            var surfaceNormal = Vector3.one;
             RaycastHit hit = new RaycastHit();
-            if (Physics.Raycast(transform.position + _rigidBody.velocity * Time.fixedDeltaTime, -Vector3.up, out hit, 1, RBTConfig.WalkableMask))
-            {
+            if (Physics.Raycast(transform.position, -Vector3.up, out hit, 1, RBTConfig.WalkableMask))
                 surfaceNormal = hit.normal;
-                _rigidBody.position = hit.point;
-                _rigidBody.position += new Vector3(0, 0.2f, 0);
-            }
 
-            SetLookDirection();
-
-            // Calculationg adjusted movement (i.e. making it parallell to unit's up vector)
+            // Setting look direction
             var movement = _movementSum.normalized;
+            var lookDirection = movement;
+            lookDirection.y = 0;
+            transform.LookAt(transform.position + lookDirection);
+
+            // Calculating adjusted movement (i.e. making it parallell to unit's up vector)
             var diffAngle = Vector3.Angle(surfaceNormal, movement) - 90f;
             movement = Quaternion.AngleAxis(-diffAngle, transform.right) * movement;
-            movement *= _speed;
+            movement *= Speed;
 
             _rigidBody.velocity = movement;
 

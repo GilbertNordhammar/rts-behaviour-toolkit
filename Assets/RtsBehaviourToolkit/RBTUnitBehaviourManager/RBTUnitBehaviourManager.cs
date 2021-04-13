@@ -21,7 +21,7 @@ namespace RtsBehaviourToolkit
         public static UnitGrid UnitGrid { get => Instance._unitGrid; }
 
         // Protected
-        protected override List<List<CommandUnit>> CalcUnitsGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination)
+        protected override List<List<CommandUnit>> CalcUnitGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination)
         {
             var unitsWithoutGroup = new HashSet<RBTUnit>(commandedUnits);
             var b = Mathf.Sqrt(Mathf.Pow(_subgroupDistance, 2) / 2);

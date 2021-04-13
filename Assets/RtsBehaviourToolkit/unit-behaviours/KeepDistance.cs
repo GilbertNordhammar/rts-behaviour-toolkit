@@ -47,11 +47,11 @@ namespace RtsBehaviourToolkit
             {
                 var scale = GetScale(unit.Unit.Bounds.Extents);
                 var scaledCathetus = cathetus * scale;
-                var nearbyUnits = grid.FindNear(unit.Unit.transform.position, new Vector3(scaledCathetus, 0, scaledCathetus));
+                var nearbyUnits = grid.FindNear(unit.Unit.Position, new Vector3(scaledCathetus, 0, scaledCathetus));
                 var maxDistance = Bounds * scale;
                 foreach (var nu in nearbyUnits)
                 {
-                    var offset = nu.transform.position - unit.Unit.transform.position;
+                    var offset = nu.transform.position - unit.Unit.Position;
                     var distance = offset.magnitude;
                     var repulsion = CalcRepulsion(distance, maxDistance);
                     nu.AddMovement(repulsion * offset.normalized);
@@ -67,7 +67,7 @@ namespace RtsBehaviourToolkit
             foreach (var unit in group.Units)
             {
                 var maxDistance = Bounds * GetScale(unit.Unit.Bounds.Extents);
-                Handles.DrawWireDisc(unit.Unit.transform.position, Vector3.up, maxDistance);
+                Handles.DrawWireDisc(unit.Unit.Position, Vector3.up, maxDistance);
             }
 #endif
         }

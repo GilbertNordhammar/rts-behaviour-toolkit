@@ -18,12 +18,19 @@ namespace RtsBehaviourToolkit
         protected bool _showPaths = false;
 
         [SerializeField]
+        protected PathsDisplayMode _pathsDisplay;
+
+        [SerializeField]
         protected bool _showBehaviours;
 
         [SerializeField]
         protected BehaviourEntry[] _behaviours;
 
         // Protected
+        protected enum PathsDisplayMode
+        {
+            None, All, MainPath, SubPaths
+        }
 
         protected class CommandGroupList : List<CommandGroup>
         {
@@ -47,7 +54,7 @@ namespace RtsBehaviourToolkit
 
         protected CommandGroupList _commandGroups = new CommandGroupList();
         protected UnitGrid _unitGrid = new UnitGrid();
-        protected abstract List<List<CommandUnit>> CalcUnitsGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination);
+        protected abstract List<List<CommandUnit>> CalcUnitGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination);
 
         [System.Serializable]
         protected class BehaviourEntry
@@ -59,7 +66,7 @@ namespace RtsBehaviourToolkit
         // Abstract interface
         public virtual void CommandGoTo(List<RBTUnit> units, Vector3 destination)
         {
-            var unitGroups = CalcUnitsGroupsPerCommand(units, destination);
+            var unitGroups = CalcUnitGroupsPerCommand(units, destination);
             _commandGroups.Capacity += unitGroups.Count;
             foreach (var group in unitGroups)
                 _commandGroups.Add(new GoToGroup(group, destination));
@@ -67,7 +74,7 @@ namespace RtsBehaviourToolkit
 
         public virtual void CommandPatrol(List<RBTUnit> units, Vector3 destination)
         {
-            var unitGroups = CalcUnitsGroupsPerCommand(units, destination);
+            var unitGroups = CalcUnitGroupsPerCommand(units, destination);
             _commandGroups.Capacity += unitGroups.Count;
             foreach (var group in unitGroups)
                 _commandGroups.Add(new PatrolGroup(group, destination));
@@ -75,14 +82,14 @@ namespace RtsBehaviourToolkit
 
         public virtual void CommandAttack(List<RBTUnit> units, IAttackable target)
         {
-            var unitGroups = CalcUnitsGroupsPerCommand(units, target.Position);
+            var unitGroups = CalcUnitGroupsPerCommand(units, target.Position);
             _commandGroups.Capacity += unitGroups.Count;
             foreach (var group in unitGroups)
                 _commandGroups.Add(new AttackGroup(group, target));
         }
         public virtual void CommandFollow(List<RBTUnit> units, GameObject target)
         {
-            var unitGroups = CalcUnitsGroupsPerCommand(units, target.transform.position);
+            var unitGroups = CalcUnitGroupsPerCommand(units, target.transform.position);
             _commandGroups.Capacity += unitGroups.Count;
             foreach (var group in unitGroups)
                 _commandGroups.Add(new FollowGroup(group, target));
@@ -171,26 +178,41 @@ namespace RtsBehaviourToolkit
                     }
                 }
 
-                if (!_showPaths) continue;
+                if (_pathsDisplay == PathsDisplayMode.None) continue;
                 foreach (var commandUnit in group.Units)
                 {
-                    var pathNodes = commandUnit.PathQueue.Last().Nodes;
-                    for (int i = 0; i < pathNodes.Length; i++)
+                    Gizmos.color = Color.red;
+                    var pLower = 0;
+                    var pUpper = commandUnit.PathQueue.Count;
+                    if (_pathsDisplay == PathsDisplayMode.MainPath)
+                        pUpper = 1;
+                    else if (_pathsDisplay == PathsDisplayMode.SubPaths)
+                        pLower = 1;
+                    for (int p = pLower; p < pUpper; p++)
                     {
-                        var node1 = pathNodes[i];
-                        Gizmos.DrawSphere(node1, 0.2f);
-                        if ((i + 1) < pathNodes.Length)
+                        var path = commandUnit.PathQueue[p];
+                        for (int n = path.PreviousNodeIndex; n < path.Nodes.Length; n++)
                         {
-                            var node2 = pathNodes[i + 1];
-                            Gizmos.DrawSphere(node2, 0.2f);
-                            Gizmos.DrawLine(node1, node2);
+                            var node1 = path.Nodes[n];
+                            Gizmos.DrawSphere(node1, 0.2f);
+                            if ((n + 1) < path.Nodes.Length)
+                            {
+                                var node2 = path.Nodes[n + 1];
+                                Gizmos.DrawSphere(node2, 0.2f);
+                                Gizmos.DrawLine(node1, node2);
+                            }
                         }
+                        Gizmos.color = Color.blue;
                     }
                 }
             }
 
+
             if (_showUnitGrid)
+            {
+                Gizmos.color = Color.red;
                 _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
+            }
 
             Gizmos.color = originalColor;
         }
