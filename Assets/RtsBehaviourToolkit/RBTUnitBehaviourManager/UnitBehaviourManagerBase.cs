@@ -119,12 +119,12 @@ namespace RtsBehaviourToolkit
         {
             RBTUnit.OnActivated += (evnt) =>
             {
-                _unitGrid.Add(evnt.sender);
+                _unitGrid.Add(evnt.Sender);
             };
 
             RBTUnit.OnDeactivated += (evnt) =>
             {
-                _unitGrid.Remove(evnt.sender);
+                _unitGrid.Remove(evnt.Sender);
             };
 
             for (int i = 0; i < _behaviours.Length; i++)

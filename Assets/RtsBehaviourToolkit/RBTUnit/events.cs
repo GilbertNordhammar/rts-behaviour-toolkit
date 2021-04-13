@@ -5,7 +5,7 @@ namespace RtsBehaviourToolkit
 {
     public partial class RBTUnit
     {
-        public event Action<UnitEvent> OnSelected
+        public event Action<OnSelectedEvent> OnSelected
         {
             add
             {
@@ -23,7 +23,7 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public event Action<UnitEvent> OnDeselected
+        public event Action<OnDeselectedEvent> OnDeselected
         {
             add
             {
@@ -41,7 +41,7 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public static event Action<UnitEvent> OnActivated
+        public static event Action<OnActivatedEvent> OnActivated
         {
             add
             {
@@ -59,7 +59,7 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public static event Action<UnitEvent> OnDeactivated
+        public static event Action<OnDeActivatedEvent> OnDeactivated
         {
             add
             {
@@ -77,20 +77,91 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public struct UnitEvent
+        public event Action<OnStateChangedEvent> OnStateChanged
         {
-            public RBTUnit sender;
+            add
+            {
+                lock (_onStateChangedLock)
+                {
+                    _onStateChanged += value;
+                }
+            }
+            remove
+            {
+                lock (_onStateChangedLock)
+                {
+                    _onStateChanged -= value;
+                }
+            }
+        }
+
+        public abstract class UnitEvent
+        {
+            public UnitEvent(RBTUnit sender)
+            {
+                Sender = sender;
+            }
+            public readonly RBTUnit Sender;
+        }
+
+        public class OnSelectedEvent : UnitEvent
+        {
+            public OnSelectedEvent(RBTUnit sender)
+                : base(sender)
+            {
+            }
+        }
+
+        public class OnDeselectedEvent : UnitEvent
+        {
+            public OnDeselectedEvent(RBTUnit sender)
+                : base(sender)
+            {
+            }
+        }
+
+        public class OnActivatedEvent : UnitEvent
+        {
+            public OnActivatedEvent(RBTUnit sender)
+                : base(sender)
+            {
+            }
+        }
+
+        public class OnDeActivatedEvent : UnitEvent
+        {
+            public OnDeActivatedEvent(RBTUnit sender)
+                : base(sender)
+            {
+            }
+        }
+
+        public class OnStateChangedEvent : UnitEvent
+        {
+            public OnStateChangedEvent(RBTUnit sender, ActionState prevState, ActionState newState)
+                : base(sender)
+            {
+                PrevState = prevState;
+                NewState = newState;
+            }
+
+            public readonly ActionState PrevState, NewState;
         }
 
         // Private
-        event Action<UnitEvent> _onSelected = delegate { };
-        event Action<UnitEvent> _onDeselected = delegate { };
-        static event Action<UnitEvent> _onActivated = delegate { };
-        static event Action<UnitEvent> _onDeactivated = delegate { };
+        event Action<OnSelectedEvent> _onSelected = delegate { };
         readonly object _onSelectedLock = new object();
+
+        event Action<OnDeselectedEvent> _onDeselected = delegate { };
         readonly object _onDeselectedLock = new object();
+
+        static event Action<OnActivatedEvent> _onActivated = delegate { };
         static readonly object _onActivatedLock = new object();
+
+        static event Action<OnDeActivatedEvent> _onDeactivated = delegate { };
         static readonly object _onDeactivatedLock = new object();
 
+        event Action<OnStateChangedEvent> _onStateChanged = delegate { };
+        static readonly object _onStateChangedLock = new object();
     }
 }

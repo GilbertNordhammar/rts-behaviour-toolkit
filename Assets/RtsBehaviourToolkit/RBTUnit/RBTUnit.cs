@@ -13,55 +13,49 @@ namespace RtsBehaviourToolkit
         [field: SerializeField]
         [field: Min(0)]
         public float Speed { get; private set; } = 2.0f;
+
+        [field: SerializeField]
+        public AttackInfo Attack;
+
         [SerializeField]
         Bounds _bounds;
 
         // Public
         public int Health { get; set; }
-
         public int MaximumHealth { get; set; }
-
         public bool Alive { get; }
-
         public Vector3 Position { get => _rigidBody.position; set => _rigidBody.position = value; }
-
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
-
         public UnitBounds Bounds { get; private set; }
+        public ActionState State
+        {
+            get => _actionState;
+            private set
+            {
+                var prevState = _actionState;
+                _actionState = value;
+                if (prevState != _actionState)
+                    _onStateChanged.Invoke(new OnStateChangedEvent(this, prevState, _actionState));
+            }
+        }
+        public IAttackable AttackTarget { get; set; }
 
         public void ClearCommandGroup()
         {
-            CommandGroupId = "none";
+            CommandGroupId = "";
         }
 
         public void AssignCommandGroup(string id)
         {
-            if (id == null) id = "none";
+            if (id == null) id = "";
             CommandGroupId = id;
         }
 
-        public string CommandGroupId { get; private set; } = "none";
+        public string CommandGroupId { get; private set; } = "";
 
         public void AddMovement(Vector3 movement)
         {
             _movementSum += movement;
-        }
-
-        int _weights = 0;
-        Vector3 _targetPosition;
-        Vector3 _currentPosition;
-        public void AddTarget(Vector3 position, int weight)
-        {
-            weight = Mathf.Max(0, weight);
-            _targetPosition += position * weight;
-            _weights += weight;
-        }
-
-        public void AddRelativeTarget(Vector3 offset, int weight)
-        {
-            weight = Mathf.Max(0, weight);
-            _targetPosition += offset * weight;
-            _weights += weight;
         }
 
         public bool Selected
@@ -71,44 +65,65 @@ namespace RtsBehaviourToolkit
             {
                 if (value != _selected)
                 {
-                    var evnt = new UnitEvent() { sender = this };
                     if (value)
-                        _onSelected.Invoke(evnt);
+                        _onSelected.Invoke(new OnSelectedEvent(this));
                     else
-                        _onDeselected.Invoke(evnt);
+                        _onDeselected.Invoke(new OnDeselectedEvent(this));
                 }
                 _selected = value;
             }
+        }
+
+        public enum ActionState
+        {
+            Idling = 0, Moving = 1, Attacking = 2
         }
 
         // Private
         bool _selected = false;
         Rigidbody _rigidBody;
         Vector3 _movementSum;
+        ActionState _actionState;
 
         // Unity functions
         void Awake()
         {
             _rigidBody = GetComponent<Rigidbody>();
             Bounds = new UnitBounds(transform, _bounds);
-            _currentPosition = _rigidBody.position;
         }
 
         void Start()
         {
-            _onActivated.Invoke(new UnitEvent() { sender = this });
+            _onActivated.Invoke(new OnActivatedEvent(this));
         }
 
         void OnEnable()
         {
             ActiveUnits.Add(this);
-            _onActivated.Invoke(new UnitEvent() { sender = this });
+            _onActivated.Invoke(new OnActivatedEvent(this));
         }
 
         void OnDisable()
         {
             ActiveUnits.Remove(this);
-            _onDeactivated.Invoke(new UnitEvent() { sender = this });
+            _onDeactivated.Invoke(new OnDeActivatedEvent(this));
+        }
+
+        void Update()
+        {
+            var isAttacking = false;
+            if (AttackTarget != null)
+            {
+                var offset = AttackTarget.Position - Position;
+                var sqrDistXZ = new Vector3(offset.x, 0, offset.z).sqrMagnitude;
+                if (sqrDistXZ < Attack.Range * Attack.Range)
+                    isAttacking = true;
+            }
+
+            if (isAttacking)
+                State |= ActionState.Attacking;
+            else
+                State &= ~ActionState.Attacking;
         }
 
         void FixedUpdate()
@@ -116,9 +131,11 @@ namespace RtsBehaviourToolkit
             // disbling physics when unit hasn't been set to move
             if (_movementSum == Vector3.zero)
             {
+                State &= ~ActionState.Moving;
                 _rigidBody.isKinematic = true;
                 return;
             }
+            State |= ActionState.Moving;
             _rigidBody.isKinematic = false;
 
             // Snapping unit to floor and setting surface normal
