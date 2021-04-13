@@ -12,41 +12,10 @@ namespace RtsBehaviourToolkit
         Material _material;
 
         // Public
-        public event Action<SelectionEndEvent> OnSelectionEnd
-        {
-            add
-            {
-                lock (_onUnitsSelectedLock)
-                {
-                    _onSelectionEnd += value;
-                }
-            }
-            remove
-            {
-                lock (_onUnitsSelectedLock)
-                {
-                    _onSelectionEnd -= value;
-                }
-            }
-        }
-
-        public struct SelectionEndEvent
-        {
-            public SelectionEndEvent(RBTUnitSelector sender, List<RBTUnit> units)
-            {
-                this.sender = sender;
-                this.selectedUnits = units;
-            }
-            public readonly RBTUnitSelector sender;
-            public readonly List<RBTUnit> selectedUnits;
-        }
-
         public static RBTUnitSelector Instance { get; private set; }
 
         // Private
         Vector2 _selectBoxStartCorner;
-        event Action<SelectionEndEvent> _onSelectionEnd = delegate { };
-        readonly object _onUnitsSelectedLock = new object();
         List<RBTUnit> _selectedUnits = new List<RBTUnit>();
 
         void SelectUnits(SelectBox selectBox)
@@ -92,7 +61,7 @@ namespace RtsBehaviourToolkit
             if (Input.GetMouseButtonDown(0))
                 _selectBoxStartCorner = Input.mousePosition;
             else if (Input.GetMouseButtonUp(0))
-                _onSelectionEnd.Invoke(new SelectionEndEvent(this, _selectedUnits));
+                _onUnitsSelected.Invoke(new OnUnitsSelectedEvent(this, _selectedUnits));
         }
 
         void OnPostRender()

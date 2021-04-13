@@ -52,7 +52,7 @@ namespace RtsBehaviourToolkit
         readonly object _onCommandGivenLock = new object();
         List<RBTUnit> _selectedUnits = new List<RBTUnit>();
 
-        void HandleSelectionEnd(RBTUnitSelector.SelectionEndEvent evnt)
+        void HandleSelectionEnd(RBTUnitSelector.OnUnitsSelectedEvent evnt)
         {
             _selectedUnits = evnt.selectedUnits;
         }
@@ -94,7 +94,7 @@ namespace RtsBehaviourToolkit
         void Start()
         {
             if (RBTUnitSelector.Instance)
-                RBTUnitSelector.Instance.OnSelectionEnd += HandleSelectionEnd;
+                RBTUnitSelector.Instance.OnUnitsSelected += HandleSelectionEnd;
 
             if (RBTConfig.WalkableMask == 0)
                 Debug.LogWarning("Units can't be commanded since 'WalkableMask' is set to 'Nothing'");
