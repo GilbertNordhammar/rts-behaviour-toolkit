@@ -193,17 +193,9 @@ namespace RtsBehaviourToolkit
             sqrOffset = Vector3.Scale(sqrOffset, sqrOffset);
             var samePosXZ = sqrOffset.x < 0.01f && sqrOffset.z < 0.01f;
             var sameAltitude = sqrOffset.y < 1.0; // TODO: Exchange 1.0 with unit height variable
-            var reachedNextNode = samePosXZ && sameAltitude;
-
-            // Quick fix for preventing units from missing node
             var sqrStepSize = Mathf.Pow(Unit.Speed * Time.fixedDeltaTime, 2);
-            var sqrDistXZ = new Vector3(sqrOffset.x, 0, sqrOffset.z).sqrMagnitude;
-            if (!reachedNextNode && sqrDistXZ < sqrStepSize) // TODO: seems like sqrStepSize is a bit to large (units visibly teleport at the end) 
-            {
-                var adjustedNextNode = new Vector3(CurrentPath.NextNode.x, Unit.Position.y, CurrentPath.NextNode.z);
-                Unit.Position = adjustedNextNode;
-                reachedNextNode = true;
-            }
+            var sqrDistXZ = new Vector3(sqrOffset.x, 0, sqrOffset.z).sqrMagnitude; // Is thise the actual step size?
+            var reachedNextNode = samePosXZ && sameAltitude || sqrDistXZ < sqrStepSize;
 
             if (reachedNextNode)
             {
