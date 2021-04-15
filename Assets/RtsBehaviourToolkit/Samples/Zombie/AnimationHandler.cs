@@ -12,20 +12,21 @@ public class AnimationHandler : MonoBehaviour
 
     void UpdateAnimationState(RBTUnit.OnStateChangedEvent evnt)
     {
-        switch (evnt.NewState)
+        var state = evnt.NewState;
+        if (state.HasFlag(RBTUnit.ActionState.Idling))
         {
-            case RBTUnit.ActionState.Idling:
-                _animator.SetTrigger("idle");
-                _animator.SetFloat("PlaybackSpeed", 1.0f);
-                break;
-            case RBTUnit.ActionState.Attacking:
-                _animator.SetTrigger("attack");
-                _animator.SetFloat("PlaybackSpeed", 1.0f);
-                break;
-            case RBTUnit.ActionState.Moving:
-                _animator.SetTrigger("walk");
-                _animator.SetFloat("PlaybackSpeed", evnt.Sender.Speed);
-                break;
+            _animator.SetTrigger("idle");
+            _animator.SetFloat("PlaybackSpeed", 1.0f);
+        }
+        else if (state.HasFlag(RBTUnit.ActionState.Attacking))
+        {
+            _animator.SetTrigger("attack");
+            _animator.SetFloat("PlaybackSpeed", 1.0f);
+        }
+        else if (state.HasFlag(RBTUnit.ActionState.Moving))
+        {
+            _animator.SetTrigger("walk");
+            _animator.SetFloat("PlaybackSpeed", evnt.Sender.Speed);
         }
     }
 

@@ -78,7 +78,7 @@ namespace RtsBehaviourToolkit
 
         public enum ActionState
         {
-            Idling = 0, Moving = 1, Attacking = 2
+            Idling = 1, Moving = 2, Attacking = 4
         }
 
         // Private
@@ -134,9 +134,12 @@ namespace RtsBehaviourToolkit
             if (_movementSum == Vector3.zero)
             {
                 State &= ~ActionState.Moving;
+                if (!State.HasFlag(ActionState.Attacking))
+                    State |= ActionState.Idling;
                 _rigidBody.isKinematic = true;
                 return;
             }
+            State &= ~ActionState.Idling;
             State |= ActionState.Moving;
             _rigidBody.isKinematic = false;
 

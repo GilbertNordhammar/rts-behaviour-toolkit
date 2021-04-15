@@ -17,7 +17,8 @@ namespace RtsBehaviourToolkit
         {
             foreach (var unit in group.Units)
             {
-                if (unit.Status == CommandUnit.PathStatus.NoPaths || unit.Status.HasFlag(CommandUnit.PathStatus.AllPathsTraversed))
+                var finishedMask = CommandUnit.PathStatus.NoPaths | CommandUnit.PathStatus.AllPathsTraversed;
+                if ((unit.Status & finishedMask) > 0)
                     unit.Remove = true;
                 if (unit.Paths.CurrentPath)
                 {

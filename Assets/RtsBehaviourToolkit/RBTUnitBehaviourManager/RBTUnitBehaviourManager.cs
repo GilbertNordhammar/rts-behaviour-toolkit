@@ -21,7 +21,6 @@ namespace RtsBehaviourToolkit
         public static UnitGrid UnitGrid { get => Instance._unitGrid; }
 
         // Protected
-
         protected override List<GoToGroup> GenerateGoToGroups(List<RBTUnit> units, Vector3 destination)
         {
             var proximityGroups = CalcProximityGroups(units);

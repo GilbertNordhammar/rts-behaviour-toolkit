@@ -256,7 +256,7 @@ namespace RtsBehaviourToolkit
 
         public enum PathStatus
         {
-            NoPaths = 0, TraversingPath = 1, NewPathNode = 2, NewPath = 4, AllPathsTraversed = 8
+            NoPaths = 1, TraversingPath = 2, NewPathNode = 4, NewPath = 8, AllPathsTraversed = 16
         }
 
         public void Update()
