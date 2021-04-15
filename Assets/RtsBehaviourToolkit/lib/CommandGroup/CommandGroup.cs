@@ -108,10 +108,44 @@ namespace RtsBehaviourToolkit
             InvokePathEvents();
         }
 
+        public void AddCustomData<T>(T data) where T : class
+        {
+            if (GetCustomData<T>(false) == null)
+                _customDataObjects.Add(data);
+            else
+                Debug.LogWarning($"Custom data of type '{typeof(T).ToString()}' won't be added as it already exists on the command group");
+        }
+
+        public void RemoveCustomData<T>() where T : class
+        {
+            var data = GetCustomData<T>(false);
+            if (data != null)
+                _customDataObjects.Remove(data);
+            else
+                Debug.LogWarning($"Custom data of type '{typeof(T).ToString()}' can't be removed as it doesn't exist on the command group");
+        }
+
+        public T GetCustomData<T>(bool alertIfNoData = true) where T : class
+        {
+            T data = null;
+            foreach (var dataObj in _customDataObjects)
+            {
+                data = dataObj as T;
+                if (data != null)
+                    break;
+            }
+
+            if (alertIfNoData)
+                Debug.LogWarning($"Custom data of type '{typeof(T).ToString()}' can't be retrieved as it doesn't exist on the command group");
+
+            return data;
+        }
+
         public Vector3 Center { get => Commander.Unit.Position + _commanderToCenterOffset; }
         public CommandUnit Commander;
         public List<CommandUnit> Units { get; } = new List<CommandUnit>();
         public string Id { get; } = System.Guid.NewGuid().ToString();
+        List<object> _customDataObjects = new List<object>();
 
         public static implicit operator bool(CommandGroup obj)
         {
