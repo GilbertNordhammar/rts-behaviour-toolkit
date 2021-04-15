@@ -1225,6 +1225,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
+      propertyPath: _debug.showPaths
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
+      propertyPath: _debug.pathsDisplay
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
+      propertyPath: _debug.showBehaviours
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
       propertyPath: _behaviours.Array.size
       value: 3
       objectReference: {fileID: 0}

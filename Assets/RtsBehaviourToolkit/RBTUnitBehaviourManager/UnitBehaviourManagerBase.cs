@@ -12,26 +12,36 @@ namespace RtsBehaviourToolkit
     {
         // Inspector
         [SerializeField]
-        protected bool _showUnitGrid = false;
-
-        [SerializeField]
-        protected bool _showPaths = false;
-
-        [SerializeField]
-        protected PathsDisplayMode _pathsDisplay;
-
-        [SerializeField]
-        protected bool _showBehaviours;
+        DebugSettings _debug;
 
         [SerializeField]
         protected BehaviourEntry[] _behaviours;
 
-        // Protected
-        protected enum PathsDisplayMode
+        // Public interface
+        public virtual void CommandGoTo(List<RBTUnit> units, Vector3 destination)
         {
-            None, All, MainPath, SubPaths
+            var groups = GenerateGoToGroups(units, destination);
+            _commandGroups.AddRange(groups);
         }
 
+        public virtual void CommandPatrol(List<RBTUnit> units, Vector3 destination)
+        {
+            var groups = GeneratePatrolGroups(units, destination);
+            _commandGroups.AddRange(groups);
+        }
+
+        public virtual void CommandAttack(List<RBTUnit> units, IAttackable target)
+        {
+            var groups = GenerateAttackGroups(units, target);
+            _commandGroups.AddRange(groups);
+        }
+        public virtual void CommandFollow(List<RBTUnit> units, GameObject target)
+        {
+            var groups = GenerateFollowGroups(units, target);
+            _commandGroups.AddRange(groups);
+        }
+
+        // Protected
         protected class CommandGroupList : List<CommandGroup>
         {
             public new void Add(CommandGroup item)
@@ -74,35 +84,24 @@ namespace RtsBehaviourToolkit
         protected abstract List<FollowGroup> GenerateFollowGroups(List<RBTUnit> units, GameObject target);
 
 
-        [System.Serializable]
+        [Serializable]
         protected class BehaviourEntry
         {
             public bool enabled = true;
             public UnitBehaviour behaviour;
         }
 
-        // Abstract interface
-        public virtual void CommandGoTo(List<RBTUnit> units, Vector3 destination)
+        protected enum PathsDisplayMode
         {
-            var groups = GenerateGoToGroups(units, destination);
-            _commandGroups.AddRange(groups);
+            None, All, MainPath, SubPaths
         }
 
-        public virtual void CommandPatrol(List<RBTUnit> units, Vector3 destination)
+        [Serializable]
+        protected class DebugSettings
         {
-            var groups = GeneratePatrolGroups(units, destination);
-            _commandGroups.AddRange(groups);
-        }
-
-        public virtual void CommandAttack(List<RBTUnit> units, IAttackable target)
-        {
-            var groups = GenerateAttackGroups(units, target);
-            _commandGroups.AddRange(groups);
-        }
-        public virtual void CommandFollow(List<RBTUnit> units, GameObject target)
-        {
-            var groups = GenerateFollowGroups(units, target);
-            _commandGroups.AddRange(groups);
+            public bool showUnitGrid = false;
+            public PathsDisplayMode pathsDisplay;
+            public bool showBehaviours;
         }
 
         // Private
@@ -163,8 +162,6 @@ namespace RtsBehaviourToolkit
                         behaviourEntry.behaviour.OnUpdate(commandGroup);
                 }
             }
-
-            Debug.Log(_commandGroups.Count);
         }
 
         // Unity editor functions
@@ -181,25 +178,28 @@ namespace RtsBehaviourToolkit
 
             foreach (var group in _commandGroups)
             {
-                if (_showBehaviours)
+                if (_debug.showBehaviours)
                 {
-                    foreach (var behaviourentry in _behaviours)
+                    foreach (var behaviourEntry in _behaviours)
                     {
-                        if (behaviourentry.enabled)
-                            behaviourentry.behaviour.DrawGizmos(group);
+                        if (behaviourEntry.enabled)
+                            behaviourEntry.behaviour.DrawGizmos(group);
                     }
                 }
 
-                if (_pathsDisplay == PathsDisplayMode.None) continue;
+                if (_debug.pathsDisplay == PathsDisplayMode.None) continue;
                 foreach (var commandUnit in group.Units)
                 {
                     Gizmos.color = Color.red;
                     var pLower = 0;
                     var pUpper = commandUnit.Paths.Count;
-                    if (_pathsDisplay == PathsDisplayMode.MainPath)
+                    if (_debug.pathsDisplay == PathsDisplayMode.MainPath)
                         pUpper = 1;
-                    else if (_pathsDisplay == PathsDisplayMode.SubPaths)
+                    else if (_debug.pathsDisplay == PathsDisplayMode.SubPaths)
+                    {
+                        Gizmos.color = Color.blue;
                         pLower = 1;
+                    }
                     for (int p = pLower; p < pUpper; p++)
                     {
                         var path = commandUnit.Paths[p];
@@ -219,12 +219,8 @@ namespace RtsBehaviourToolkit
                 }
             }
 
-
-            if (_showUnitGrid)
-            {
-                Gizmos.color = Color.red;
-                _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, new Color(1, 0, 0, 0.5f));
-            }
+            if (_debug.showUnitGrid)
+                _unitGrid.DrawGizmos(UnitGrid.GizmosDrawMode.Wire, Color.white);
 
             Gizmos.color = originalColor;
         }
