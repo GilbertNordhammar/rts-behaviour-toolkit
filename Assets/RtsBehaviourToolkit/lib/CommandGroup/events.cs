@@ -80,9 +80,9 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public class Event
+        public class PathEvent
         {
-            public Event(CommandGroup sender, CommandUnit unit)
+            public PathEvent(CommandGroup sender, CommandUnit unit)
             {
                 this.sender = sender;
                 this.unit = unit;
@@ -91,7 +91,7 @@ namespace RtsBehaviourToolkit
             public readonly CommandUnit unit;
         }
 
-        public class NewPathNodeEvent : Event
+        public class NewPathNodeEvent : PathEvent
         {
             public NewPathNodeEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)
@@ -99,7 +99,7 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public class UnitChangedGroupEvent : Event
+        public class UnitChangedGroupEvent : PathEvent
         {
             public UnitChangedGroupEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)
@@ -109,7 +109,7 @@ namespace RtsBehaviourToolkit
             public readonly string previousGroupId;
         }
 
-        public class NewPathEvent : Event
+        public class NewPathEvent : PathEvent
         {
             public NewPathEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)
@@ -117,7 +117,7 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public class MainPathTraversedEvent : Event
+        public class MainPathTraversedEvent : PathEvent
         {
             public MainPathTraversedEvent(CommandGroup sender, CommandUnit unit)
                 : base(sender, unit)

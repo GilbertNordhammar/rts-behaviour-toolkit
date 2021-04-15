@@ -12,6 +12,9 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         UnitBehaviourManagerBase _unitBehaviourManager;
 
+        [SerializeField]
+        LayerMask _targetable;
+
         // Public
         public static RBTUnitCommander Instance { get; private set; }
 
@@ -57,21 +60,32 @@ namespace RtsBehaviourToolkit
             _selectedUnits = evnt.selectedUnits;
         }
 
-        void CommandUnits(Vector3 mousePosition, List<RBTUnit> units)
+        void CommandUnits(List<RBTUnit> units)
         {
-            var ray = Camera.main.ScreenPointToRay(mousePosition);
-            var clickMask = RBTConfig.WalkableMask;
+            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            var clickMask = RBTConfig.WalkableMask | _targetable;
             RaycastHit clickHit = new RaycastHit();
 
             if (Physics.Raycast(ray, out clickHit, 100f, clickMask))
             {
-                NavMeshHit navMeshHit;
-                var walkableMask = 1 << NavMesh.GetAreaFromName("Walkable");
-                var isWalkable = NavMesh.SamplePosition(clickHit.point, out navMeshHit, 1f, walkableMask);
+                var clickedObject = clickHit.collider.gameObject;
+                bool isWalkable = RBTConfig.WalkableMask == (RBTConfig.WalkableMask | (1 << clickedObject.layer));
+                bool isTargetable = _targetable == (_targetable | (1 << clickedObject.layer));
                 if (isWalkable)
                 {
-                    _unitBehaviourManager.CommandGoTo(units, clickHit.point);
-                    _onCommandGiven.Invoke(new CommandGivenEvent(this, clickHit.point, units));
+                    NavMeshHit navMeshHit;
+                    var walkableMask = 1 << NavMesh.GetAreaFromName("Walkable");
+                    var walkablePos = NavMesh.SamplePosition(clickHit.point, out navMeshHit, 1f, walkableMask);
+                    if (walkablePos)
+                    {
+                        _unitBehaviourManager.CommandGoTo(units, clickHit.point);
+                        _onCommandGiven.Invoke(new CommandGivenEvent(this, clickHit.point, units));
+                    }
+                }
+                else if (isTargetable)
+                {
+                    Debug.Log("follow unit " + clickedObject.name);
+                    _unitBehaviourManager.CommandFollow(units, clickedObject);
                 }
             }
         }
@@ -98,13 +112,16 @@ namespace RtsBehaviourToolkit
 
             if (RBTConfig.WalkableMask == 0)
                 Debug.LogWarning("Units can't be commanded since 'WalkableMask' is set to 'Nothing'");
+
+            if ((RBTConfig.WalkableMask & _targetable) > 0)
+                Debug.LogWarning($"'Targetable' shares layers with RBTConfig.WalkableMask, which might cause unexpected behaviour");
         }
 
         void Update()
         {
             if (Input.GetMouseButtonDown(1) && _selectedUnits.Count > 0)
             {
-                CommandUnits(Input.mousePosition, _selectedUnits);
+                CommandUnits(_selectedUnits);
             }
         }
     }

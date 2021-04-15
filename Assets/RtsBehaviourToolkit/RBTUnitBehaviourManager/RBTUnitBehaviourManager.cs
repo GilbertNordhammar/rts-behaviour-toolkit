@@ -21,9 +21,47 @@ namespace RtsBehaviourToolkit
         public static UnitGrid UnitGrid { get => Instance._unitGrid; }
 
         // Protected
-        protected override List<List<CommandUnit>> CalcUnitGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination)
+
+        protected override List<GoToGroup> GenerateGoToGroups(List<RBTUnit> units, Vector3 destination)
         {
-            var unitsWithoutGroup = new HashSet<RBTUnit>(commandedUnits);
+            var proximityGroups = CalcProximityGroups(units);
+            var goToGroups = new List<GoToGroup>();
+            goToGroups.Capacity = proximityGroups.Count;
+            foreach (var group in proximityGroups)
+                goToGroups.Add(new GoToGroup(units, destination));
+            return goToGroups;
+        }
+
+        protected override List<PatrolGroup> GeneratePatrolGroups(List<RBTUnit> units, Vector3 destination)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override List<AttackGroup> GenerateAttackGroups(List<RBTUnit> units, IAttackable target)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override List<FollowGroup> GenerateFollowGroups(List<RBTUnit> units, GameObject target)
+        {
+            throw new NotImplementedException();
+            // Vector3 destination = target.transform.position;
+
+            // var proximityGroups = CalcProximityGroups(units);
+            // var followGroups = new List<FollowGroup>();
+            // followGroups.Capacity = proximityGroups.Count;
+            // foreach (var pg in proximityGroups)
+            // {
+            //     var commandUnits = CalcCommandUnits(pg, destination);
+            //     followGroups.Add(new FollowGroup(commandUnits, 0, target));
+            // }
+            // return followGroups;
+        }
+
+        // Private
+        List<List<RBTUnit>> CalcProximityGroups(List<RBTUnit> units)
+        {
+            var unitsWithoutGroup = new HashSet<RBTUnit>(units);
             var b = Mathf.Sqrt(Mathf.Pow(_subgroupDistance, 2) / 2);
             var bounds = new Vector3(b, 0, b);
 
@@ -40,51 +78,18 @@ namespace RtsBehaviourToolkit
                 }
             };
 
-            var unitGroups = new List<List<CommandUnit>>();
-            foreach (var unit in commandedUnits)
+            var proximityGroups = new List<List<RBTUnit>>();
+            foreach (var unit in units)
             {
                 if (unitsWithoutGroup.Contains(unit))
                 {
-                    var unitsInCommandGroup = new List<RBTUnit>();
-                    calcConnectingUnits(unit, unitsInCommandGroup);
-                    var commandUnits = CalcCommandUnits(unitsInCommandGroup, destination);
-                    if (commandUnits.Count > 0)
-                        unitGroups.Add(commandUnits);
+                    var group = new List<RBTUnit>();
+                    calcConnectingUnits(unit, group);
+                    proximityGroups.Add(group);
                 }
             }
 
-            return unitGroups;
-        }
-
-        // Private
-        List<CommandUnit> CalcCommandUnits(List<RBTUnit> units, Vector3 destination)
-        {
-            var center = new Vector3();
-            foreach (var unit in units)
-            {
-                center += unit.transform.position;
-            }
-            center /= units.Count;
-
-            var navMeshPath = new NavMeshPath();
-            NavMesh.CalculatePath(center, destination, NavMesh.AllAreas, navMeshPath);
-
-            var commandUnits = new List<CommandUnit>();
-            commandUnits.Capacity = units.Count;
-            if (navMeshPath.status == NavMeshPathStatus.PathComplete)
-            {
-                foreach (var unit in units)
-                {
-                    var posOffset = unit.transform.position - center;
-                    var nodes = new Vector3[navMeshPath.corners.Length];
-                    Array.Copy(navMeshPath.corners, nodes, navMeshPath.corners.Length);
-                    for (int j = 0; j < nodes.Length; j++)
-                        nodes[j] += posOffset;
-                    commandUnits.Add(new CommandUnit(unit, nodes));
-                }
-            }
-
-            return commandUnits;
+            return proximityGroups;
         }
 
         // Unity functions

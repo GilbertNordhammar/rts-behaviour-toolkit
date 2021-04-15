@@ -37,11 +37,15 @@ namespace RtsBehaviourToolkit
             public new void Add(CommandGroup item)
             {
                 base.Add(item);
-                foreach (var entry in _behaviourEntries)
-                {
-                    if (entry.enabled)
-                        entry.behaviour.OnCommandGroupCreated(item);
-                }
+                NotifyBehaviours(item);
+            }
+
+            public new void AddRange(IEnumerable<CommandGroup> items)
+            {
+                base.AddRange(items);
+
+                foreach (var item in items)
+                    NotifyBehaviours(item);
             }
 
             public void Init(BehaviourEntry[] behaviourEntries)
@@ -49,12 +53,26 @@ namespace RtsBehaviourToolkit
                 _behaviourEntries = behaviourEntries;
             }
 
+            void NotifyBehaviours(CommandGroup item)
+            {
+                foreach (var entry in _behaviourEntries)
+                {
+                    if (entry.enabled)
+                        entry.behaviour.OnCommandGroupCreated(item);
+                }
+            }
+
             BehaviourEntry[] _behaviourEntries;
         }
 
         protected CommandGroupList _commandGroups = new CommandGroupList();
         protected UnitGrid _unitGrid = new UnitGrid();
-        protected abstract List<List<CommandUnit>> CalcUnitGroupsPerCommand(List<RBTUnit> commandedUnits, Vector3 destination);
+
+        protected abstract List<GoToGroup> GenerateGoToGroups(List<RBTUnit> units, Vector3 destination);
+        protected abstract List<PatrolGroup> GeneratePatrolGroups(List<RBTUnit> units, Vector3 destination);
+        protected abstract List<AttackGroup> GenerateAttackGroups(List<RBTUnit> units, IAttackable target);
+        protected abstract List<FollowGroup> GenerateFollowGroups(List<RBTUnit> units, GameObject target);
+
 
         [System.Serializable]
         protected class BehaviourEntry
@@ -66,33 +84,25 @@ namespace RtsBehaviourToolkit
         // Abstract interface
         public virtual void CommandGoTo(List<RBTUnit> units, Vector3 destination)
         {
-            var unitGroups = CalcUnitGroupsPerCommand(units, destination);
-            _commandGroups.Capacity += unitGroups.Count;
-            foreach (var group in unitGroups)
-                _commandGroups.Add(new GoToGroup(group, destination));
+            var groups = GenerateGoToGroups(units, destination);
+            _commandGroups.AddRange(groups);
         }
 
         public virtual void CommandPatrol(List<RBTUnit> units, Vector3 destination)
         {
-            var unitGroups = CalcUnitGroupsPerCommand(units, destination);
-            _commandGroups.Capacity += unitGroups.Count;
-            foreach (var group in unitGroups)
-                _commandGroups.Add(new PatrolGroup(group, destination));
+            var groups = GeneratePatrolGroups(units, destination);
+            _commandGroups.AddRange(groups);
         }
 
         public virtual void CommandAttack(List<RBTUnit> units, IAttackable target)
         {
-            var unitGroups = CalcUnitGroupsPerCommand(units, target.Position);
-            _commandGroups.Capacity += unitGroups.Count;
-            foreach (var group in unitGroups)
-                _commandGroups.Add(new AttackGroup(group, target));
+            var groups = GenerateAttackGroups(units, target);
+            _commandGroups.AddRange(groups);
         }
         public virtual void CommandFollow(List<RBTUnit> units, GameObject target)
         {
-            var unitGroups = CalcUnitGroupsPerCommand(units, target.transform.position);
-            _commandGroups.Capacity += unitGroups.Count;
-            foreach (var group in unitGroups)
-                _commandGroups.Add(new FollowGroup(group, target));
+            var groups = GenerateFollowGroups(units, target);
+            _commandGroups.AddRange(groups);
         }
 
         // Private
@@ -153,6 +163,8 @@ namespace RtsBehaviourToolkit
                         behaviourEntry.behaviour.OnUpdate(commandGroup);
                 }
             }
+
+            Debug.Log(_commandGroups.Count);
         }
 
         // Unity editor functions
@@ -183,14 +195,14 @@ namespace RtsBehaviourToolkit
                 {
                     Gizmos.color = Color.red;
                     var pLower = 0;
-                    var pUpper = commandUnit.PathQueue.Count;
+                    var pUpper = commandUnit.Paths.Count;
                     if (_pathsDisplay == PathsDisplayMode.MainPath)
                         pUpper = 1;
                     else if (_pathsDisplay == PathsDisplayMode.SubPaths)
                         pLower = 1;
                     for (int p = pLower; p < pUpper; p++)
                     {
-                        var path = commandUnit.PathQueue[p];
+                        var path = commandUnit.Paths[p];
                         for (int n = path.PreviousNodeIndex; n < path.Nodes.Length; n++)
                         {
                             var node1 = path.Nodes[n];

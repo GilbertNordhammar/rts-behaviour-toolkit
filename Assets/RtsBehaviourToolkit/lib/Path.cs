@@ -44,6 +44,11 @@ namespace RtsBehaviourToolkit
 
         public bool Traversed { get => _indexIncrement >= Nodes.Length; }
 
+        public static implicit operator bool(Path me)
+        {
+            return me != null;
+        }
+
         // Private
         int _indexIncrement = 0;
     }

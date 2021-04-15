@@ -25,6 +25,8 @@ namespace RtsBehaviourToolkit
         public int MaximumHealth { get; set; }
         public bool Alive { get; }
         public Vector3 Position { get => _rigidBody.position; set => _rigidBody.position = value; }
+        public GameObject GameObject { get => gameObject; }
+
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
         public UnitBounds Bounds { get; private set; }
         public ActionState State

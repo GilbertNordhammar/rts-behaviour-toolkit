@@ -8,9 +8,13 @@ public class PositionDisplayer : MonoBehaviour
     // Unity editor
     [SerializeField]
     GameObject _positionMarker;
+
     [SerializeField]
     [Min(0.1f)]
     float _markerDuration = 1.0f;
+
+    [SerializeField]
+    RBTUnitCommander _unitCommander;
 
     // Private
     GameObject _activePositionMarker;
@@ -35,23 +39,16 @@ public class PositionDisplayer : MonoBehaviour
         StartCoroutine(_setMarker);
     }
 
-    // Unity functions
-    void Start()
-    {
-        if (RBTUnitCommander.Instance)
-            RBTUnitCommander.Instance.OnCommandGiven += HandleCommandGiven;
-    }
-
     void OnEnable()
     {
-        if (RBTUnitCommander.Instance)
-            RBTUnitCommander.Instance.OnCommandGiven += HandleCommandGiven;
+        if (_unitCommander)
+            _unitCommander.OnCommandGiven += HandleCommandGiven;
     }
 
     void OnDisable()
     {
-        if (RBTUnitCommander.Instance)
-            RBTUnitCommander.Instance.OnCommandGiven -= HandleCommandGiven;
+        if (_unitCommander)
+            _unitCommander.OnCommandGiven -= HandleCommandGiven;
     }
 
     void Awake()

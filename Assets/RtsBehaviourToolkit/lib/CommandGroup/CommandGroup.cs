@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Assertions;
 
 namespace RtsBehaviourToolkit
 {
@@ -13,8 +14,8 @@ namespace RtsBehaviourToolkit
 
     public class AttackGroup : CommandGroup
     {
-        public AttackGroup(List<CommandUnit> units, IAttackable target)
-            : base(units)
+        public AttackGroup(List<CommandUnit> units, int commanderIndex, IAttackable target)
+            : base(units, commanderIndex)
         {
             Target = target;
         }
@@ -24,8 +25,8 @@ namespace RtsBehaviourToolkit
 
     public class FollowGroup : CommandGroup
     {
-        public FollowGroup(List<CommandUnit> units, GameObject target)
-            : base(units)
+        public FollowGroup(List<CommandUnit> units, int commanderIndex, GameObject target)
+            : base(units, commanderIndex)
         {
             Target = target;
         }
@@ -35,25 +36,16 @@ namespace RtsBehaviourToolkit
 
     public class GoToGroup : CommandGroup
     {
-        public GoToGroup(List<CommandUnit> units, Vector3 destination)
+        public GoToGroup(List<RBTUnit> units, Vector3 destination)
             : base(units)
         {
             Destination = destination;
         }
 
-        public override void Update()
+        public GoToGroup(List<CommandUnit> units, int commanderIndex, Vector3 destination)
+            : base(units, commanderIndex)
         {
-            base.Update();
-
-            var unitsAtDestination = new List<CommandUnit>();
-            foreach (var unit in Units)
-            {
-                if (unit.Status.HasFlag(CommandUnit.MovementStatus.MainPathTraversed))
-                    unitsAtDestination.Add(unit);
-            }
-
-            foreach (var unit in unitsAtDestination)
-                Units.Remove(unit);
+            Destination = destination;
         }
 
         public Vector3 Destination { get; }
@@ -61,21 +53,10 @@ namespace RtsBehaviourToolkit
 
     public class PatrolGroup : CommandGroup
     {
-        public PatrolGroup(List<CommandUnit> units, Vector3 destination)
-            : base(units)
+        public PatrolGroup(List<CommandUnit> units, int commanderIndex, Vector3 destination)
+            : base(units, commanderIndex)
         {
             Destination = destination;
-        }
-
-        public override void Update()
-        {
-            base.Update();
-
-            foreach (var unit in Units)
-            {
-                if (unit.Status.HasFlag(CommandUnit.MovementStatus.MainPathTraversed))
-                    unit.MainPath = new Path(unit.MainPath.Nodes.Reverse().ToArray());
-            }
         }
 
         public Vector3 Destination { get; }
@@ -85,34 +66,50 @@ namespace RtsBehaviourToolkit
     public abstract partial class CommandGroup
     {
         // Public
-        public CommandGroup(List<CommandUnit> units)
+        public CommandGroup(List<RBTUnit> units)
+            : this(units.Select(unit => new CommandUnit(unit)).ToList(), 0)
         {
+        }
+
+        public CommandGroup(List<CommandUnit> units, int commanderIndex)
+        {
+            Assert.IsTrue(commanderIndex >= 0 && commanderIndex < units.Count, "Commander index must be within index bounds");
             Units = new List<CommandUnit>(units);
+
+            Commander = Units[commanderIndex];
+
+            var center = Vector3.zero;
+            foreach (var unit in Units)
+                center += unit.Unit.Position;
+            center /= Units.Count;
+            _commanderToCenterOffset = center - Commander.Unit.Position;
 
             foreach (var unit in Units)
                 unit.Unit.AssignCommandGroup(Id);
         }
 
-        public virtual void Update()
+        public void Update()
         {
-            var unitsInNewGroup = new List<CommandUnit>();
+            var unitsToRemove = new List<CommandUnit>();
             foreach (var unit in Units)
             {
-                if (unit.Unit.CommandGroupId == Id)
+                if (unit.Unit.CommandGroupId == Id && !unit.Remove)
                     unit.Update();
                 else
                 {
                     _onChangedGroup.Invoke(new UnitChangedGroupEvent(this, unit));
-                    unitsInNewGroup.Add(unit);
+                    unitsToRemove.Add(unit);
                 }
             }
 
-            foreach (var unit in unitsInNewGroup)
+            foreach (var unit in unitsToRemove)
                 Units.Remove(unit);
 
-            InvokeMovementEvents();
+            InvokePathEvents();
         }
 
+        public Vector3 Center { get => Commander.Unit.Position + _commanderToCenterOffset; }
+        public CommandUnit Commander;
         public List<CommandUnit> Units { get; } = new List<CommandUnit>();
         public string Id { get; } = System.Guid.NewGuid().ToString();
 
@@ -122,105 +119,148 @@ namespace RtsBehaviourToolkit
         }
 
         // Private
+        readonly Vector3 _commanderToCenterOffset;
 
-        void InvokeMovementEvents()
+        void InvokePathEvents()
         {
             foreach (var unit in Units)
             {
                 var movementStatus = unit.Status;
 
-                if (movementStatus.HasFlag(CommandUnit.MovementStatus.NewPathNode))
+                if (movementStatus.HasFlag(CommandUnit.PathStatus.NewPathNode))
                     _onNewPathNode.Invoke(new NewPathNodeEvent(this, unit));
-                if (movementStatus.HasFlag(CommandUnit.MovementStatus.NewPath))
+                if (movementStatus.HasFlag(CommandUnit.PathStatus.NewPath))
                     _onNewPath.Invoke(new NewPathEvent(this, unit));
-                if (movementStatus.HasFlag(CommandUnit.MovementStatus.MainPathTraversed))
+                if (movementStatus.HasFlag(CommandUnit.PathStatus.AllPathsTraversed))
                     _onMainPathTraversed.Invoke(new MainPathTraversedEvent(this, unit));
             }
         }
+    }
+
+    public class PathStack : IEnumerable<Path>
+    {
+        public void PushPath(Path item)
+        {
+            _paths.Add(item);
+        }
+
+        public void PushPath(Vector3[] pathNodes)
+        {
+            _paths.Add(new Path(pathNodes));
+        }
+
+        public void PopCurrentPath()
+        {
+            if (_paths.Count > 0)
+                _paths.RemoveAt(_paths.Count - 1);
+        }
+
+        public Path CurrentPath
+        {
+            get => _paths.Count > 0 ? _paths.Last() : null;
+            set
+            {
+                if (_paths.Count > 0)
+                    _paths[_paths.Count - 1] = value;
+                else
+                    _paths.Add(value);
+            }
+        }
+
+        public int Count { get => _paths.Count; }
+
+        public int Capacity
+        {
+            get => _paths.Capacity;
+            set => _paths.Capacity = value;
+        }
+
+        public void RemoveAt(int index)
+        {
+            _paths.RemoveAt(index);
+        }
+
+        public IEnumerator<Path> GetEnumerator()
+        {
+            return _paths.GetEnumerator();
+        }
+
+        public Path this[int index]
+        {
+            get => _paths[index];
+            set => _paths[index] = value;
+        }
+
+        // private
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        List<Path> _paths = new List<Path>();
     }
 
     [Serializable]
     public class CommandUnit
     {
         // Public
-        public CommandUnit(RBTUnit unit, Path mainPath)
+        public CommandUnit(RBTUnit unit)
         {
             Unit = unit;
-            PathQueue.Add(mainPath);
         }
 
         public CommandUnit(RBTUnit unit, Vector3[] pathNodes)
-            : this(unit, new Path(pathNodes))
+            : this(unit)
         {
         }
 
         public RBTUnit Unit { get; }
+        public PathStack Paths { get; } = new PathStack();
+        public PathStatus Status { get; private set; }
+        public bool Remove { get; set; }
 
-        public List<Path> PathQueue { get; } = new List<Path>();
-        public Path CurrentPath
+        public enum PathStatus
         {
-            get => PathQueue.Last();
-            set => PathQueue[PathQueue.Count - 1] = value;
-        }
-
-        public Path MainPath
-        {
-            get => PathQueue[0];
-            set => PathQueue[0] = value;
-        }
-
-        public MovementStatus Status { get; private set; }
-
-        public void PushSubPath(Path path)
-        {
-            PathQueue.Add(path);
-        }
-
-        public void PushPath(Vector3[] nodes)
-        {
-            PathQueue.Add(new Path(nodes));
-        }
-
-        public enum MovementStatus
-        {
-            TraversingPath = 1, NewPathNode = 2, NewPath = 4, MainPathTraversed = 8
+            NoPaths = 0, TraversingPath = 1, NewPathNode = 2, NewPath = 4, AllPathsTraversed = 8
         }
 
         public void Update()
         {
-            Status = MovementStatus.TraversingPath;
-            var sqrOffset = CurrentPath.NextNode - Unit.Position;
+            Status = PathStatus.NoPaths;
+            if (Paths.Count == 0) return;
+
+            Status = PathStatus.TraversingPath;
+            var sqrOffset = Paths.CurrentPath.NextNode - Unit.Position;
             sqrOffset = Vector3.Scale(sqrOffset, sqrOffset);
             var samePosXZ = sqrOffset.x < 0.01f && sqrOffset.z < 0.01f;
             var sameAltitude = sqrOffset.y < 1.0; // TODO: Exchange 1.0 with unit height variable
-            var sqrStepSize = Mathf.Pow(Unit.Speed * Time.fixedDeltaTime, 2);
-            var sqrDistXZ = new Vector3(sqrOffset.x, 0, sqrOffset.z).sqrMagnitude; // Is thise the actual step size?
+            var sqrStepSize = Mathf.Pow(Unit.Speed * Time.fixedDeltaTime, 2); // Is this the actual step size?
+            var sqrDistXZ = new Vector3(sqrOffset.x, 0, sqrOffset.z).sqrMagnitude;
             var reachedNextNode = samePosXZ && sameAltitude || sqrDistXZ < sqrStepSize;
 
             if (reachedNextNode)
             {
-                Status |= MovementStatus.NewPathNode;
-
-                CurrentPath.Increment();
-                if (CurrentPath.Traversed)
+                Paths.CurrentPath.Increment();
+                if (Paths.CurrentPath.Traversed)
                 {
-                    if (PathQueue.Count == 1)
+                    Paths.RemoveAt(Paths.Count - 1);
+                    if (Paths.Count == 0)
                     {
-                        Status |= MovementStatus.MainPathTraversed;
-                        Status &= ~MovementStatus.TraversingPath;
+                        Status |= PathStatus.AllPathsTraversed;
+                        Status &= ~PathStatus.TraversingPath;
                     }
-                    else
-                    {
-                        PathQueue.RemoveAt(PathQueue.Count - 1);
-                        Status |= MovementStatus.NewPath;
-                    }
+                    else Status |= PathStatus.NewPath;
                 }
+
+                if (Paths.Count > 0)
+                    Status |= PathStatus.NewPathNode;
             }
         }
 
         public int NextCornerIndex
         {
-            get => CurrentPath.NextNodeIndex;
+            get => Paths.CurrentPath.NextNodeIndex;
         }
 
         public static implicit operator bool(CommandUnit obj)
