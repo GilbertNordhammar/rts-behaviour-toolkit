@@ -144,33 +144,6 @@ namespace RtsBehaviourToolkit
             commander.Paths.CurrentPath = new Path(nodes);
         }
 
-        void AddHighLevelPaths(CommandGroup group, Vector3 destination)
-        {
-            var units = group.Units;
-            var center = new Vector3();
-            foreach (var unit in units)
-            {
-                center += unit.Unit.Position;
-            }
-            center /= units.Count;
-
-            var navMeshPath = new NavMeshPath();
-            NavMesh.CalculatePath(center, destination, NavMesh.AllAreas, navMeshPath);
-
-            if (navMeshPath.status == NavMeshPathStatus.PathComplete)
-            {
-                foreach (var unit in units)
-                {
-                    var posOffset = unit.Unit.Position - center;
-                    var nodes = new Vector3[navMeshPath.corners.Length];
-                    Array.Copy(navMeshPath.corners, nodes, navMeshPath.corners.Length);
-                    for (int j = 0; j < nodes.Length; j++)
-                        nodes[j] += posOffset;
-                    unit.Paths.PushPath(nodes);
-                }
-            }
-        }
-
         void EnsureNextNodeIsReachable(CommandUnit unit)
         {
             // TODO: Clean this up
@@ -213,7 +186,6 @@ namespace RtsBehaviourToolkit
                     var nodes = new Vector3[path.corners.Length - 1];
                     Array.Copy(path.corners, 1, nodes, 0, nodes.Length);
                     unit.Paths.PushPath(nodes);
-                    // unit.Paths.PushPath(path.corners);
                 }
             }
         }

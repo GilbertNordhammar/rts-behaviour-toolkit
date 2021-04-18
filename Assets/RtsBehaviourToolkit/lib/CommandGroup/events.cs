@@ -26,51 +26,6 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public class PathEvent
-        {
-            public PathEvent(CommandGroup sender, CommandUnit unit)
-            {
-                this.sender = sender;
-                this.unit = unit;
-            }
-            public readonly CommandGroup sender;
-            public readonly CommandUnit unit;
-        }
-
-        public class NewPathNodeEvent : PathEvent
-        {
-            public NewPathNodeEvent(CommandGroup sender, CommandUnit unit)
-                : base(sender, unit)
-            {
-            }
-        }
-
-        public class UnitChangedGroupEvent : PathEvent
-        {
-            public UnitChangedGroupEvent(CommandGroup sender, CommandUnit unit)
-                : base(sender, unit)
-            {
-                previousGroupId = sender.Id;
-            }
-            public readonly string previousGroupId;
-        }
-
-        public class NewPathEvent : PathEvent
-        {
-            public NewPathEvent(CommandGroup sender, CommandUnit unit)
-                : base(sender, unit)
-            {
-            }
-        }
-
-        public class MainPathTraversedEvent : PathEvent
-        {
-            public MainPathTraversedEvent(CommandGroup sender, CommandUnit unit)
-                : base(sender, unit)
-            {
-            }
-        }
-
         public class OnUnitsRemove
         {
             public OnUnitsRemove(int[] indices)
