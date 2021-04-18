@@ -55,7 +55,7 @@ namespace RtsBehaviourToolkit
         readonly object _onCommandGivenLock = new object();
         List<RBTUnit> _selectedUnits = new List<RBTUnit>();
 
-        void HandleSelectionEnd(RBTUnitSelector.OnUnitsSelectedEvent evnt)
+        void HandleOnUnitsSelected(RBTUnitSelector.OnUnitsSelectedEvent evnt)
         {
             _selectedUnits = evnt.selectedUnits;
         }
@@ -84,10 +84,24 @@ namespace RtsBehaviourToolkit
                 }
                 else if (isTargetable)
                 {
-                    // Debug.Log("follow unit " + clickedObject.name);
+                    StartCoroutine(Highlight(clickedObject));
                     _unitBehaviourManager.CommandFollow(units, clickedObject);
                 }
             }
+        }
+
+        // TODO: Make something that doesn't just highlight units
+        IEnumerator Highlight(GameObject obj)
+        {
+            var unit = obj.GetComponent<RBTUnit>();
+            if (unit)
+            {
+                unit.Selected = true;
+                yield return new WaitForSecondsRealtime(0.3f);
+                unit.Selected = false;
+            }
+
+            yield return null;
         }
 
         // Unity functions
@@ -108,7 +122,7 @@ namespace RtsBehaviourToolkit
         void Start()
         {
             if (RBTUnitSelector.Instance)
-                RBTUnitSelector.Instance.OnUnitsSelected += HandleSelectionEnd;
+                RBTUnitSelector.Instance.OnUnitsSelected += HandleOnUnitsSelected;
 
             if (RBTConfig.WalkableMask == 0)
                 Debug.LogWarning("Units can't be commanded since 'WalkableMask' is set to 'Nothing'");
