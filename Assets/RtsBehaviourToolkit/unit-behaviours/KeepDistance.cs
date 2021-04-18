@@ -23,10 +23,15 @@ namespace RtsBehaviourToolkit
         [field: SerializeField]
         public float Tilt { get; private set; } = 0.5f;
 
+        [field: SerializeField, Min(1f)]
+        public float Fov { get; private set; }
+
         [SerializeField]
         bool _drawGizmos;
 
         // Private
+        float _fovDotProdThreshold;
+
         float GetScale(Vector3 extents)
         {
             return extents.x > extents.z ? extents.x : extents.z;
@@ -37,6 +42,26 @@ namespace RtsBehaviourToolkit
             var numerator = Tilt * (1 - distance / maxDistance);
             var denominator = distance + Tilt;
             return Weight * Mathf.Max(0, numerator / denominator);
+        }
+
+        bool WithinFov(RBTUnit source, RBTUnit target)
+        {
+            var dirSourceToTarget = (target.Position - source.Position).normalized;
+            var sourceVelocityDir = source.Velocity.normalized;
+
+            var dotProd = Vector3.Dot(dirSourceToTarget, sourceVelocityDir);
+            return dotProd > _fovDotProdThreshold;
+        }
+
+        // Unity functions
+        void Awake()
+        {
+            _fovDotProdThreshold = Mathf.Cos(Mathf.Deg2Rad * Fov);
+        }
+
+        void OnValidate()
+        {
+            _fovDotProdThreshold = Mathf.Cos(Mathf.Deg2Rad * Fov);
         }
 
         // Public
@@ -55,6 +80,8 @@ namespace RtsBehaviourToolkit
                 var maxDistance = Bounds * scale;
                 foreach (var nu in nearbyUnits)
                 {
+                    if (!WithinFov(unit.Unit, nu)) continue;
+
                     var offset = nu.transform.position - unit.Unit.Position;
                     var distance = offset.magnitude;
                     var movement = CalcRepulsion(distance, maxDistance) * offset.normalized;
@@ -75,15 +102,21 @@ namespace RtsBehaviourToolkit
 
         public override void DrawGizmos(CommandGroup group)
         {
-            if (!_drawGizmos) return;
-
 #if UNITY_EDITOR
+            if (!_drawGizmos) return;
+            var origColor = Handles.color;
+            Handles.color = new Color(1, 1, 1, 0.2f);
+
             foreach (var unit in group.Units)
             {
                 var maxDistance = Bounds * GetScale(unit.Unit.Bounds.Extents);
-                Handles.DrawWireDisc(unit.Unit.Position, Vector3.up, maxDistance);
+                // Handles.DrawWireDisc(unit.Unit.Position, Vector3.up, maxDistance);
+
+                var viewArcStartDirection = Quaternion.AngleAxis(-Fov / 2, Vector3.up) * unit.Unit.Velocity.normalized;
+                Handles.DrawSolidArc(unit.Unit.Position, Vector3.up, viewArcStartDirection, Fov, maxDistance);
             }
-#endif
+            Handles.color = origColor;
+#endif  
         }
     }
 }
