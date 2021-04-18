@@ -135,7 +135,7 @@ namespace RtsBehaviourToolkit
             if (data.OffsetCommanderToCenter == Vector3.zero && targetIsUnit)
                 offset = (targetPos - data.Commander.Unit.Position).normalized;
             else
-                offset = data.OffsetCommanderToCenter.normalized;
+                offset = data.OffsetCommanderToCenter;
             var destination = targetPos - offset;
 
             // var nodes = new Vector3[] { commander.Unit.Position, destination };
