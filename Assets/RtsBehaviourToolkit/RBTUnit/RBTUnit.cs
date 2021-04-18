@@ -26,6 +26,7 @@ namespace RtsBehaviourToolkit
         public bool Alive { get; }
         public Vector3 Position { get => _rigidBody.position; set => _rigidBody.position = value; }
         public GameObject GameObject { get => gameObject; }
+        public Vector3 Velocity { get => _rigidBody.velocity; }
 
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
         public UnitBounds Bounds { get; private set; }
@@ -86,6 +87,37 @@ namespace RtsBehaviourToolkit
         Rigidbody _rigidBody;
         Vector3 _movementSum;
         ActionState _actionState;
+        bool _isOnGround = false;
+
+        void UpdateLookDirection()
+        {
+            if (_movementSum == Vector3.zero) return;
+
+            var lookDirection = _movementSum;
+            lookDirection.y = 0;
+            var lookRotation = Quaternion.LookRotation(lookDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 10);
+        }
+
+        void UpdateState()
+        {
+            State = ActionState.Idling;
+
+            if (AttackTarget != null)
+            {
+                var offset = AttackTarget.Position - Position;
+                var sqrDistXZ = new Vector3(offset.x, 0, offset.z).sqrMagnitude;
+                if (sqrDistXZ < Attack.Range * Attack.Range)
+                    State |= ActionState.Attacking;
+            }
+
+            if (_movementSum != Vector3.zero)
+                State |= ActionState.Moving;
+
+            var notIdling = (State & ~ActionState.Idling) > 0;
+            if (notIdling)
+                State &= ~ActionState.Idling;
+        }
 
         // Unity functions
         void Awake()
@@ -113,34 +145,23 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
-            var isAttacking = false;
-            if (AttackTarget != null)
-            {
-                var offset = AttackTarget.Position - Position;
-                var sqrDistXZ = new Vector3(offset.x, 0, offset.z).sqrMagnitude;
-                if (sqrDistXZ < Attack.Range * Attack.Range)
-                    isAttacking = true;
-            }
-
-            if (isAttacking)
-                State |= ActionState.Attacking;
-            else
-                State &= ~ActionState.Attacking;
+            UpdateLookDirection();
+            UpdateState();
         }
 
         void FixedUpdate()
         {
-            // disbling physics when unit hasn't been set to move
+            if (!_isOnGround)
+            {
+                _rigidBody.isKinematic = false;
+                return;
+            }
+
             if (_movementSum == Vector3.zero)
             {
-                State &= ~ActionState.Moving;
-                if (!State.HasFlag(ActionState.Attacking))
-                    State |= ActionState.Idling;
                 _rigidBody.isKinematic = true;
                 return;
             }
-            State &= ~ActionState.Idling;
-            State |= ActionState.Moving;
             _rigidBody.isKinematic = false;
 
             // Snapping unit to floor and setting surface normal
@@ -149,21 +170,21 @@ namespace RtsBehaviourToolkit
             if (Physics.Raycast(transform.position, -Vector3.up, out hit, 1, RBTConfig.WalkableMask))
                 surfaceNormal = hit.normal;
 
-            // Setting look direction
-            var movement = _movementSum.normalized;
-            var lookDirection = movement;
-            lookDirection.y = 0;
-            transform.LookAt(transform.position + lookDirection);
-
             // Calculating adjusted movement (i.e. making it parallell to unit's up vector)
+            var movement = _movementSum.normalized;
             var diffAngle = Vector3.Angle(surfaceNormal, movement) - 90f;
-            movement = Quaternion.AngleAxis(-diffAngle, transform.right) * movement;
+            var right = Vector3.Cross(surfaceNormal, movement).normalized;
+            movement = Quaternion.AngleAxis(-diffAngle, right) * movement;
             movement *= Speed;
-
             _rigidBody.velocity = movement;
 
             // reset movement until next update
             _movementSum = Vector3.zero;
+        }
+
+        void OnCollisionEnter(Collision other)
+        {
+            _isOnGround = true;
         }
 
         // Unity Editor functions

@@ -8,74 +8,20 @@ namespace RtsBehaviourToolkit
     public partial class CommandGroup
     {
         // Public
-        public event Action<NewPathNodeEvent> OnNewPathNode
+        public event Action<OnUnitsRemove> OnUnitsWillBeRemoved
         {
             add
             {
-                lock (_onNewPathNodeLock)
+                lock (_onUnitsWillBeRemovedLock)
                 {
-                    _onNewPathNode += value;
+                    _onUnitsWillBeRemoved += value;
                 }
             }
             remove
             {
-                lock (_onNewPathNodeLock)
+                lock (_onUnitsWillBeRemovedLock)
                 {
-                    _onNewPathNode -= value;
-                }
-            }
-        }
-
-        public event Action<UnitChangedGroupEvent> OnChangedGroup
-        {
-            add
-            {
-                lock (_onChangedGroupLock)
-                {
-                    _onChangedGroup += value;
-                }
-            }
-            remove
-            {
-                lock (_onChangedGroupLock)
-                {
-                    _onChangedGroup -= value;
-                }
-            }
-        }
-
-        public event Action<NewPathEvent> OnNewPath
-        {
-            add
-            {
-                lock (_onNewPathLock)
-                {
-                    _onNewPath += value;
-                }
-            }
-            remove
-            {
-                lock (_onNewPathLock)
-                {
-                    _onNewPath -= value;
-                }
-            }
-        }
-
-        public event Action<MainPathTraversedEvent> OnMainPathTraversed
-        {
-            add
-            {
-                lock (_onMainPathTraversedLock)
-                {
-                    _onMainPathTraversed += value;
-                }
-            }
-            remove
-            {
-                lock (_onMainPathTraversedLock)
-                {
-                    _onMainPathTraversed -= value;
+                    _onUnitsWillBeRemoved -= value;
                 }
             }
         }
@@ -125,14 +71,17 @@ namespace RtsBehaviourToolkit
             }
         }
 
+        public class OnUnitsRemove
+        {
+            public OnUnitsRemove(int[] indices)
+            {
+                UnitsIndices = indices;
+            }
+            public readonly int[] UnitsIndices;
+        }
+
         // Private
-        Action<NewPathNodeEvent> _onNewPathNode = delegate { };
-        readonly object _onNewPathNodeLock = new object();
-        Action<UnitChangedGroupEvent> _onChangedGroup = delegate { };
-        readonly object _onChangedGroupLock = new object();
-        Action<NewPathEvent> _onNewPath = delegate { };
-        readonly object _onNewPathLock = new object();
-        Action<MainPathTraversedEvent> _onMainPathTraversed = delegate { };
-        readonly object _onMainPathTraversedLock = new object();
+        Action<OnUnitsRemove> _onUnitsWillBeRemoved = delegate { };
+        readonly object _onUnitsWillBeRemovedLock = new object();
     }
 }

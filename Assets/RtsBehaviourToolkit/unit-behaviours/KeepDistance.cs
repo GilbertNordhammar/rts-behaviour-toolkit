@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -41,6 +42,9 @@ namespace RtsBehaviourToolkit
         // Public
         public override void OnUpdate(CommandGroup group)
         {
+            var followGroup = group as FollowGroup;
+            var commanderData = group.GetCustomData<CommonGroupData>();
+
             var grid = RBTUnitBehaviourManager.UnitGrid;
             var cathetus = Mathf.Sqrt(Mathf.Pow(Bounds, 2) / 2);
             foreach (var unit in group.Units)
@@ -53,8 +57,18 @@ namespace RtsBehaviourToolkit
                 {
                     var offset = nu.transform.position - unit.Unit.Position;
                     var distance = offset.magnitude;
-                    var repulsion = CalcRepulsion(distance, maxDistance);
-                    nu.AddMovement(repulsion * offset.normalized);
+                    var movement = CalcRepulsion(distance, maxDistance) * offset.normalized;
+
+                    if (followGroup)
+                    {
+                        var commander = commanderData.Commander;
+                        if (followGroup.Target == nu.GameObject && unit != commander)
+                            unit.Unit.AddMovement(-movement);
+                        else if (nu != commander.Unit || (nu == commander.Unit && commander.Unit.State.HasFlag(RBTUnit.ActionState.Idling)))
+                            nu.AddMovement(movement);
+                    }
+                    else
+                        nu.AddMovement(movement);
                 }
             }
         }

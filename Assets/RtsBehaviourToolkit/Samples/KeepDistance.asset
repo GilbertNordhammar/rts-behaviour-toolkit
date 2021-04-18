@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: KeepDistance
   m_EditorClassIdentifier: 
   <Weight>k__BackingField: 10
-  <Bounds>k__BackingField: 2
+  <Bounds>k__BackingField: 1.5
   <Tilt>k__BackingField: 0.5
   _drawGizmos: 1

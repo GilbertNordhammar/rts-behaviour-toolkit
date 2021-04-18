@@ -27,7 +27,7 @@ namespace RtsBehaviourToolkit
             var goToGroups = new List<GoToGroup>();
             goToGroups.Capacity = proximityGroups.Count;
             foreach (var group in proximityGroups)
-                goToGroups.Add(new GoToGroup(units, destination));
+                goToGroups.Add(new GoToGroup(group, destination));
             return goToGroups;
         }
 
@@ -43,18 +43,12 @@ namespace RtsBehaviourToolkit
 
         protected override List<FollowGroup> GenerateFollowGroups(List<RBTUnit> units, GameObject target)
         {
-            throw new NotImplementedException();
-            // Vector3 destination = target.transform.position;
-
-            // var proximityGroups = CalcProximityGroups(units);
-            // var followGroups = new List<FollowGroup>();
-            // followGroups.Capacity = proximityGroups.Count;
-            // foreach (var pg in proximityGroups)
-            // {
-            //     var commandUnits = CalcCommandUnits(pg, destination);
-            //     followGroups.Add(new FollowGroup(commandUnits, 0, target));
-            // }
-            // return followGroups;
+            var proximityGroups = CalcProximityGroups(units);
+            var followGroups = new List<FollowGroup>();
+            followGroups.Capacity = proximityGroups.Count;
+            foreach (var group in proximityGroups)
+                followGroups.Add(new FollowGroup(group, target));
+            return followGroups;
         }
 
         // Private

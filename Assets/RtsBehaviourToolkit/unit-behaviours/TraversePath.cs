@@ -15,12 +15,13 @@ namespace RtsBehaviourToolkit
 
         public override void OnUpdate(CommandGroup group)
         {
+            var isGoTo = group is GoToGroup;
             foreach (var unit in group.Units)
             {
-                var finishedMask = CommandUnit.PathStatus.NoPaths | CommandUnit.PathStatus.AllPathsTraversed;
-                if ((unit.Status & finishedMask) > 0)
-                    unit.Remove = true;
-                if (unit.Paths.CurrentPath)
+                if (isGoTo)
+                    unit.Remove = !unit.Paths.CurrentPath;
+
+                if (unit.Paths.CurrentPath && !unit.Paths.CurrentPath.Traversed && !unit.Remove)
                 {
                     var direction = (unit.Paths.CurrentPath.NextNode - unit.Unit.Position).normalized;
                     unit.Unit.AddMovement(_weight * direction);

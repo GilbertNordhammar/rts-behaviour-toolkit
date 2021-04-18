@@ -84,7 +84,7 @@ namespace RtsBehaviourToolkit
                 }
                 else if (isTargetable)
                 {
-                    Debug.Log("follow unit " + clickedObject.name);
+                    // Debug.Log("follow unit " + clickedObject.name);
                     _unitBehaviourManager.CommandFollow(units, clickedObject);
                 }
             }

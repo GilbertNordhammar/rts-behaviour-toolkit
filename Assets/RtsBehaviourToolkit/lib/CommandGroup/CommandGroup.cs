@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using UnityEngine;
-using Unity.Assertions;
 
 namespace RtsBehaviourToolkit
 {
@@ -14,8 +14,14 @@ namespace RtsBehaviourToolkit
 
     public class AttackGroup : CommandGroup
     {
-        public AttackGroup(List<CommandUnit> units, int commanderIndex, IAttackable target)
-            : base(units, commanderIndex)
+        public AttackGroup(List<RBTUnit> units, IAttackable target)
+            : base(units)
+        {
+            Target = target;
+        }
+
+        public AttackGroup(List<CommandUnit> units, IAttackable target)
+            : base(units)
         {
             Target = target;
         }
@@ -25,8 +31,14 @@ namespace RtsBehaviourToolkit
 
     public class FollowGroup : CommandGroup
     {
-        public FollowGroup(List<CommandUnit> units, int commanderIndex, GameObject target)
-            : base(units, commanderIndex)
+        public FollowGroup(List<RBTUnit> units, GameObject target)
+            : base(units)
+        {
+            Target = target;
+        }
+
+        public FollowGroup(List<CommandUnit> units, GameObject target)
+            : base(units)
         {
             Target = target;
         }
@@ -42,8 +54,8 @@ namespace RtsBehaviourToolkit
             Destination = destination;
         }
 
-        public GoToGroup(List<CommandUnit> units, int commanderIndex, Vector3 destination)
-            : base(units, commanderIndex)
+        public GoToGroup(List<CommandUnit> units, Vector3 destination)
+            : base(units)
         {
             Destination = destination;
         }
@@ -53,8 +65,14 @@ namespace RtsBehaviourToolkit
 
     public class PatrolGroup : CommandGroup
     {
-        public PatrolGroup(List<CommandUnit> units, int commanderIndex, Vector3 destination)
-            : base(units, commanderIndex)
+        public PatrolGroup(List<RBTUnit> units, Vector3 destination)
+            : base(units)
+        {
+            Destination = destination;
+        }
+
+        public PatrolGroup(List<CommandUnit> units, Vector3 destination)
+            : base(units)
         {
             Destination = destination;
         }
@@ -67,22 +85,13 @@ namespace RtsBehaviourToolkit
     {
         // Public
         public CommandGroup(List<RBTUnit> units)
-            : this(units.Select(unit => new CommandUnit(unit)).ToList(), 0)
+            : this(units.Select(unit => new CommandUnit(unit)).ToList())
         {
         }
 
-        public CommandGroup(List<CommandUnit> units, int commanderIndex)
+        public CommandGroup(List<CommandUnit> units)
         {
-            Assert.IsTrue(commanderIndex >= 0 && commanderIndex < units.Count, "Commander index must be within index bounds");
-            Units = new List<CommandUnit>(units);
-
-            Commander = Units[commanderIndex];
-
-            var center = Vector3.zero;
-            foreach (var unit in Units)
-                center += unit.Unit.Position;
-            center /= Units.Count;
-            _commanderToCenterOffset = center - Commander.Unit.Position;
+            _units = new List<CommandUnit>(units);
 
             foreach (var unit in Units)
                 unit.Unit.AssignCommandGroup(Id);
@@ -90,22 +99,35 @@ namespace RtsBehaviourToolkit
 
         public void Update()
         {
-            var unitsToRemove = new List<CommandUnit>();
-            foreach (var unit in Units)
+            var unitIndexesToRemove = new List<int>();
+
+            for (int i = 0; i < _units.Count; i++)
             {
-                if (unit.Unit.CommandGroupId == Id && !unit.Remove)
-                    unit.Update();
-                else
+                if (_units[i].Unit.CommandGroupId == Id && !_units[i].Remove)
                 {
-                    _onChangedGroup.Invoke(new UnitChangedGroupEvent(this, unit));
-                    unitsToRemove.Add(unit);
+                    _units[i].Paths.ClearRecentPaths();
+                    if (_units[i].Paths.CurrentPath)
+                        _units[i].Paths.CurrentPath.UpdatePreviousNextNode();
+                    _units[i].UpdatePaths();
                 }
+                else unitIndexesToRemove.Add(i);
             }
 
-            foreach (var unit in unitsToRemove)
-                Units.Remove(unit);
+            if (unitIndexesToRemove.Count > 0)
+                _onUnitsWillBeRemoved.Invoke(new OnUnitsRemove(unitIndexesToRemove.ToArray()));
 
-            InvokePathEvents();
+            var nRemovedCounter = 0;
+            foreach (var index in unitIndexesToRemove)
+            {
+                if (_units.Count > 1)
+                {
+                    var i = index - nRemovedCounter;
+                    _units.RemoveAt(i);
+                    nRemovedCounter++;
+                }
+                else
+                    _units.RemoveAt(0);
+            }
         }
 
         public void AddCustomData<T>(T data) where T : class
@@ -135,15 +157,13 @@ namespace RtsBehaviourToolkit
                     break;
             }
 
-            if (alertIfNoData)
+            if (data == null && alertIfNoData)
                 Debug.LogWarning($"Custom data of type '{typeof(T).ToString()}' can't be retrieved as it doesn't exist on the command group");
 
             return data;
         }
 
-        public Vector3 Center { get => Commander.Unit.Position + _commanderToCenterOffset; }
-        public CommandUnit Commander;
-        public List<CommandUnit> Units { get; } = new List<CommandUnit>();
+        public IReadOnlyList<CommandUnit> Units { get => _units; }
         public string Id { get; } = System.Guid.NewGuid().ToString();
         List<object> _customDataObjects = new List<object>();
 
@@ -154,21 +174,7 @@ namespace RtsBehaviourToolkit
 
         // Private
         readonly Vector3 _commanderToCenterOffset;
-
-        void InvokePathEvents()
-        {
-            foreach (var unit in Units)
-            {
-                var movementStatus = unit.Status;
-
-                if (movementStatus.HasFlag(CommandUnit.PathStatus.NewPathNode))
-                    _onNewPathNode.Invoke(new NewPathNodeEvent(this, unit));
-                if (movementStatus.HasFlag(CommandUnit.PathStatus.NewPath))
-                    _onNewPath.Invoke(new NewPathEvent(this, unit));
-                if (movementStatus.HasFlag(CommandUnit.PathStatus.AllPathsTraversed))
-                    _onMainPathTraversed.Invoke(new MainPathTraversedEvent(this, unit));
-            }
-        }
+        List<CommandUnit> _units { get; } = new List<CommandUnit>();
     }
 
     public class PathStack : IEnumerable<Path>
@@ -183,10 +189,21 @@ namespace RtsBehaviourToolkit
             _paths.Add(new Path(pathNodes));
         }
 
-        public void PopCurrentPath()
+        public void PopPath()
         {
             if (_paths.Count > 0)
+            {
+                _recentPaths.Add(_paths[_paths.Count - 1]);
                 _paths.RemoveAt(_paths.Count - 1);
+            }
+        }
+        public void ClearPaths()
+        {
+            if (_paths.Count > 0)
+            {
+                _recentPaths.AddRange(_paths);
+                _paths.Clear();
+            }
         }
 
         public Path CurrentPath
@@ -201,17 +218,19 @@ namespace RtsBehaviourToolkit
             }
         }
 
+        public void ClearRecentPaths()
+        {
+            _recentPaths.Clear();
+        }
+
+        public ReadOnlyCollection<Path> RecentPaths { get => _recentPaths.AsReadOnly(); }
+
         public int Count { get => _paths.Count; }
 
         public int Capacity
         {
             get => _paths.Capacity;
             set => _paths.Capacity = value;
-        }
-
-        public void RemoveAt(int index)
-        {
-            _paths.RemoveAt(index);
         }
 
         public IEnumerator<Path> GetEnumerator()
@@ -233,6 +252,7 @@ namespace RtsBehaviourToolkit
         }
 
         List<Path> _paths = new List<Path>();
+        List<Path> _recentPaths = new List<Path>();
     }
 
     [Serializable]
@@ -251,20 +271,14 @@ namespace RtsBehaviourToolkit
 
         public RBTUnit Unit { get; }
         public PathStack Paths { get; } = new PathStack();
-        public PathStatus Status { get; private set; }
         public bool Remove { get; set; }
 
-        public enum PathStatus
+        public void UpdatePaths()
         {
-            NoPaths = 1, TraversingPath = 2, NewPathNode = 4, NewPath = 8, AllPathsTraversed = 16
-        }
-
-        public void Update()
-        {
-            Status = PathStatus.NoPaths;
+            if (Paths.Count > 0 && Paths.CurrentPath.Traversed)
+                Paths.PopPath();
             if (Paths.Count == 0) return;
 
-            Status = PathStatus.TraversingPath;
             var sqrOffset = Paths.CurrentPath.NextNode - Unit.Position;
             sqrOffset = Vector3.Scale(sqrOffset, sqrOffset);
             var samePosXZ = sqrOffset.x < 0.01f && sqrOffset.z < 0.01f;
@@ -274,22 +288,7 @@ namespace RtsBehaviourToolkit
             var reachedNextNode = samePosXZ && sameAltitude || sqrDistXZ < sqrStepSize;
 
             if (reachedNextNode)
-            {
                 Paths.CurrentPath.Increment();
-                if (Paths.CurrentPath.Traversed)
-                {
-                    Paths.RemoveAt(Paths.Count - 1);
-                    if (Paths.Count == 0)
-                    {
-                        Status |= PathStatus.AllPathsTraversed;
-                        Status &= ~PathStatus.TraversingPath;
-                    }
-                    else Status |= PathStatus.NewPath;
-                }
-
-                if (Paths.Count > 0)
-                    Status |= PathStatus.NewPathNode;
-            }
         }
 
         public int NextCornerIndex
