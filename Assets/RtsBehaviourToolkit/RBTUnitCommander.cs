@@ -53,11 +53,11 @@ namespace RtsBehaviourToolkit
         // Private
         event Action<CommandGivenEvent> _onCommandGiven = delegate { };
         readonly object _onCommandGivenLock = new object();
-        List<RBTUnit> _selectedUnits = new List<RBTUnit>();
+        RBTUnitSelector.OnUnitsSelectedEvent _onUnitsSelectedEvent;
 
         void HandleOnUnitsSelected(RBTUnitSelector.OnUnitsSelectedEvent evnt)
         {
-            _selectedUnits = evnt.selectedUnits;
+            _onUnitsSelectedEvent = evnt;
         }
 
         void CommandUnits(List<RBTUnit> units)
@@ -85,7 +85,24 @@ namespace RtsBehaviourToolkit
                 else if (isTargetable)
                 {
                     StartCoroutine(Highlight(clickedObject));
-                    _unitBehaviourManager.CommandFollow(units, clickedObject);
+
+                    var attackable = clickedObject.GetComponent<IAttackable>();
+                    var mayFollow = true;
+
+                    if (attackable != null)
+                    {
+                        var mayAttack = attackable.Team != _onUnitsSelectedEvent.Team;
+                        if (mayAttack)
+                        {
+                            mayFollow = false;
+                            foreach (var unit in units)
+                                unit.AttackTarget = attackable;
+                            _unitBehaviourManager.CommandAttack(units, attackable);
+                        }
+                    }
+
+                    if (mayFollow)
+                        _unitBehaviourManager.CommandFollow(units, clickedObject);
                 }
             }
         }
@@ -133,9 +150,10 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
-            if (Input.GetMouseButtonDown(1) && _selectedUnits.Count > 0)
+            if (Input.GetMouseButtonDown(1) && _onUnitsSelectedEvent)
             {
-                CommandUnits(_selectedUnits);
+                if (_onUnitsSelectedEvent.SelectedUnits.Count > 0)
+                    CommandUnits(_onUnitsSelectedEvent.SelectedUnits);
             }
         }
     }

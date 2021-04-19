@@ -15,6 +15,7 @@ namespace RtsBehaviourToolkit
         public override void OnUpdate(CommandGroup group)
         {
             var followGroup = group as FollowGroup;
+            var attackGroup = group as AttackGroup;
 
             if (followGroup)
             {
@@ -22,6 +23,16 @@ namespace RtsBehaviourToolkit
                 {
                     var sqrDist = (unit.Unit.transform.position - followGroup.Target.transform.position).sqrMagnitude;
                     if (sqrDist < _minFollowDistance * _minFollowDistance)
+                        unit.Paths.ClearPaths();
+                }
+            }
+            else if (attackGroup)
+            {
+                foreach (var unit in attackGroup.Units)
+                {
+                    var attackRange = unit.Unit.Attack.Range;
+                    var sqrDist = (unit.Unit.transform.position - attackGroup.Target.Position).sqrMagnitude;
+                    if (sqrDist < attackRange * attackRange)
                         unit.Paths.ClearPaths();
                 }
             }

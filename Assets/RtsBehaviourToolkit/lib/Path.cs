@@ -55,7 +55,7 @@ namespace RtsBehaviourToolkit
 
         public static implicit operator bool(Path me)
         {
-            return me != null;
+            return !object.ReferenceEquals(me, null);
         }
 
         // Private

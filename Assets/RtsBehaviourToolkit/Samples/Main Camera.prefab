@@ -97,3 +97,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _material: {fileID: 2100000, guid: a18645e4b1afdad4b9d0b4c3da73047b, type: 2}
+  _selectable:
+    serializedVersion: 2
+    m_Bits: 16384
+  _selectableTeam: {fileID: 11400000, guid: d32fa8786f4f025429638d30e75fee4d, type: 2}

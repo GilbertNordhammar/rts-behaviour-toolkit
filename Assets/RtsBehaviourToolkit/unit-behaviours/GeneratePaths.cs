@@ -14,26 +14,6 @@ namespace RtsBehaviourToolkit
         // Public
         public override void OnCommandGroupCreated(CommandGroup group)
         {
-            Vector3 destination = Vector3.zero;
-            if (group is GoToGroup)
-            {
-                var goToGroup = (GoToGroup)group;
-                destination = goToGroup.Destination;
-            }
-            else if (group is PatrolGroup)
-            {
-                throw new NotImplementedException();
-            }
-            else if (group is FollowGroup)
-            {
-                var followGroup = group as FollowGroup;
-                destination = followGroup.Target.transform.position;
-            }
-            else // attack group
-            {
-                throw new NotImplementedException();
-            }
-
             var commonData = new CommonGroupData();
             group.AddCustomData(commonData);
 
@@ -51,7 +31,7 @@ namespace RtsBehaviourToolkit
 
             var targetPos = Vector3.zero;
             var mayUpdatePaths = commonData.NewCommander;
-            var targetIsUnit = false;
+            IMovable movable = null;
             if (group is GoToGroup)
             {
                 var goToGroup = group as GoToGroup;
@@ -61,14 +41,21 @@ namespace RtsBehaviourToolkit
             {
                 var followGroup = group as FollowGroup;
                 targetPos = followGroup.Target.transform.position;
-                var unit = followGroup.Target.GetComponent<RBTUnit>();
-                mayUpdatePaths |= (unit && unit.Velocity != Vector3.zero);
-                targetIsUnit = true;
+                movable = followGroup.Target.GetComponent<IMovable>();
             }
+            else if (group is AttackGroup)
+            {
+                var attackGroup = group as AttackGroup;
+                targetPos = attackGroup.Target.Position;
+                movable = attackGroup.Target.GameObject.GetComponent<IMovable>();
+            }
+
+            if (movable != null)
+                mayUpdatePaths |= movable.Velocity != Vector3.zero;
 
             if (mayUpdatePaths)
             {
-                SetCommanderPath(commonData, targetPos, targetIsUnit);
+                SetCommanderPath(commonData, targetPos);
                 EnsureNextNodeIsReachable(commander);
 
                 if (group.Units.Count > 0)
@@ -112,15 +99,10 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        void SetCommanderPath(CommonGroupData data, Vector3 targetPos, bool targetIsUnit)
+        void SetCommanderPath(CommonGroupData data, Vector3 targetPos)
         {
             var commander = data.Commander;
-            Vector3 offset;
-            // if (data.OffsetCommanderToCenter == Vector3.zero && targetIsUnit)
-            //     offset = (targetPos - data.Commander.Unit.Position).normalized;
-            // else
-            //     offset = data.OffsetCommanderToCenter;
-            offset = data.OffsetCommanderToCenter;
+            Vector3 offset = data.OffsetCommanderToCenter;
             var destination = targetPos - offset;
 
             var nodes = new Vector3[] { destination };

@@ -14,6 +14,9 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         LayerMask _selectable;
 
+        [SerializeField]
+        Team _selectableTeam;
+
         // Public
         public static RBTUnitSelector Instance { get; private set; }
 
@@ -24,7 +27,9 @@ namespace RtsBehaviourToolkit
 
         void TrySelectMultipleUnits(SelectBox selectBox)
         {
-            foreach (var unit in RBTUnit.ActiveUnits)
+            if (!_selectableTeam) return;
+
+            foreach (var unit in RBTUnit.ActiveUnitsPerTeam[_selectableTeam])
             {
                 var pointOnScreen = Camera.main.WorldToScreenPoint(unit.Bounds.Center);
                 bool selected = selectBox.IsWithinBox(pointOnScreen);
@@ -45,6 +50,8 @@ namespace RtsBehaviourToolkit
 
         void TrySelectSingleUnit()
         {
+            if (!_selectableTeam) return;
+
             _selectedUnits.Clear();
 
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -55,7 +62,7 @@ namespace RtsBehaviourToolkit
             {
                 var clickedObject = clickHit.collider.gameObject;
                 var unit = clickedObject.GetComponent<RBTUnit>();
-                if (unit)
+                if (unit && unit.Team == _selectableTeam)
                 {
                     _hasSelectedSingle = true;
                     _selectedUnits.Add(unit);
@@ -86,6 +93,9 @@ namespace RtsBehaviourToolkit
 
             if (_selectable == 0)
                 Debug.LogWarning($"Please assign layers to 'Selectable' on RBTUnitSelector attached to '{name}'");
+
+            if (!_selectableTeam)
+                Debug.LogWarning($"Please assign a team to 'Selectable Team' on RBTUnitSelector attached to '{name}'");
         }
 
         void Update()
@@ -99,7 +109,7 @@ namespace RtsBehaviourToolkit
             }
             else if (Input.GetMouseButtonUp(0))
             {
-                _onUnitsSelected.Invoke(new OnUnitsSelectedEvent(this, _selectedUnits));
+                _onUnitsSelected.Invoke(new OnUnitsSelectedEvent(this, _selectedUnits, _selectableTeam));
                 _hasSelectedSingle = false;
             }
         }

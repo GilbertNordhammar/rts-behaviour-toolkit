@@ -13,7 +13,7 @@ namespace RtsBehaviourToolkit
 
         [field: SerializeField]
         [field: Min(0)]
-        public float Frequency { get; set; } = 1f;
+        public float TimePerAttack { get; set; } = 1f;
 
         [field: SerializeField]
         [field: Min(0)]

@@ -38,7 +38,12 @@ namespace RtsBehaviourToolkit
 
         protected override List<AttackGroup> GenerateAttackGroups(List<RBTUnit> units, IAttackable target)
         {
-            throw new NotImplementedException();
+            var proximityGroups = CalcProximityGroups(units);
+            var attackGroups = new List<AttackGroup>();
+            attackGroups.Capacity = proximityGroups.Count;
+            foreach (var group in proximityGroups)
+                attackGroups.Add(new AttackGroup(group, target));
+            return attackGroups;
         }
 
         protected override List<FollowGroup> GenerateFollowGroups(List<RBTUnit> units, GameObject target)

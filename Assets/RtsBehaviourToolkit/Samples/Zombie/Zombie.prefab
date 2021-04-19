@@ -102,12 +102,14 @@ MonoBehaviour:
   <Speed>k__BackingField: 5
   Attack:
     <Damage>k__BackingField: 1
-    <Frequency>k__BackingField: 1
-    <Range>k__BackingField: 1
+    <TimePerAttack>k__BackingField: 2
+    <Range>k__BackingField: 1.2
     <DamageDelay>k__BackingField: 1
   _bounds:
     m_Center: {x: 0, y: 0.87, z: 0}
     m_Extent: {x: 0.47, y: 0.96, z: 0.37}
+  <Team>k__BackingField: {fileID: 11400000, guid: d32fa8786f4f025429638d30e75fee4d,
+    type: 2}
 --- !u!114 &942705409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -120,6 +122,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 696e59ba825496f42acbc383dd24c5c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _attackClipName: attack
 --- !u!1 &1068519158798810
 GameObject:
   m_ObjectHideFlags: 0

@@ -167,9 +167,9 @@ namespace RtsBehaviourToolkit
         public string Id { get; } = System.Guid.NewGuid().ToString();
         List<object> _customDataObjects = new List<object>();
 
-        public static implicit operator bool(CommandGroup obj)
+        public static implicit operator bool(CommandGroup me)
         {
-            return obj != null;
+            return !object.ReferenceEquals(me, null);
         }
 
         // Private
@@ -296,9 +296,9 @@ namespace RtsBehaviourToolkit
             get => Paths.CurrentPath.NextNodeIndex;
         }
 
-        public static implicit operator bool(CommandUnit obj)
+        public static implicit operator bool(CommandUnit me)
         {
-            return obj != null;
+            return !object.ReferenceEquals(me, null);
         }
     }
 }

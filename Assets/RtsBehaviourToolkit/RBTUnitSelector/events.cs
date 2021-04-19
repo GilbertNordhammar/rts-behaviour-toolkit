@@ -28,13 +28,20 @@ namespace RtsBehaviourToolkit
 
         public struct OnUnitsSelectedEvent
         {
-            public OnUnitsSelectedEvent(RBTUnitSelector sender, List<RBTUnit> units)
+            public OnUnitsSelectedEvent(RBTUnitSelector sender, List<RBTUnit> units, Team team)
             {
-                this.sender = sender;
-                this.selectedUnits = units;
+                Sender = sender;
+                SelectedUnits = units;
+                Team = team;
             }
-            public readonly RBTUnitSelector sender;
-            public readonly List<RBTUnit> selectedUnits;
+            public readonly RBTUnitSelector Sender;
+            public readonly List<RBTUnit> SelectedUnits;
+            public readonly Team Team;
+
+            public static implicit operator bool(OnUnitsSelectedEvent me)
+            {
+                return !object.ReferenceEquals(me, null);
+            }
         }
 
         // Private

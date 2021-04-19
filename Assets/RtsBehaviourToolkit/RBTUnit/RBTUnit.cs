@@ -7,9 +7,9 @@ namespace RtsBehaviourToolkit
 {
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
-    public partial class RBTUnit : MonoBehaviour, IAttackable
+    public partial class RBTUnit : MonoBehaviour, IAttackable, IMovable
     {
-        // Editor fields
+        // Inspector and public
         [field: SerializeField]
         [field: Min(0)]
         public float Speed { get; private set; } = 2.0f;
@@ -20,7 +20,9 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         Bounds _bounds;
 
-        // Public
+        [field: SerializeField]
+        public Team Team { get; private set; }
+
         public int Health { get; set; }
         public int MaximumHealth { get; set; }
         public bool Alive { get; }
@@ -29,6 +31,7 @@ namespace RtsBehaviourToolkit
         public Vector3 Velocity { get => _rigidBody.velocity; }
 
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
+        public static Dictionary<Team, List<RBTUnit>> ActiveUnitsPerTeam { get; private set; } = new Dictionary<Team, List<RBTUnit>>();
         public UnitBounds Bounds { get; private set; }
         public ActionState State
         {
@@ -91,9 +94,15 @@ namespace RtsBehaviourToolkit
 
         void UpdateLookDirection()
         {
-            if (_movementSum == Vector3.zero) return;
+            Vector3 lookDirection;
+            if (State.HasFlag(ActionState.Attacking))
+                lookDirection = (AttackTarget.Position - Position).normalized;
+            else
+            {
+                if (_movementSum == Vector3.zero) return;
+                lookDirection = _movementSum;
+            }
 
-            var lookDirection = _movementSum;
             lookDirection.y = 0;
             var lookRotation = Quaternion.LookRotation(lookDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 10);
@@ -101,22 +110,26 @@ namespace RtsBehaviourToolkit
 
         void UpdateState()
         {
-            State = ActionState.Idling;
+            var newState = ActionState.Idling;
 
             if (AttackTarget != null)
             {
                 var offset = AttackTarget.Position - Position;
                 var sqrDistXZ = new Vector3(offset.x, 0, offset.z).sqrMagnitude;
                 if (sqrDistXZ < Attack.Range * Attack.Range)
-                    State |= ActionState.Attacking;
+                    newState |= ActionState.Attacking;
             }
+            else
+                newState &= ~ActionState.Attacking;
 
             if (_movementSum != Vector3.zero)
-                State |= ActionState.Moving;
+                newState |= ActionState.Moving;
 
-            var notIdling = (State & ~ActionState.Idling) > 0;
+            var notIdling = (newState & ~ActionState.Idling) > 0;
             if (notIdling)
-                State &= ~ActionState.Idling;
+                newState &= ~ActionState.Idling;
+
+            State = newState;
         }
 
         // Unity functions
@@ -124,6 +137,9 @@ namespace RtsBehaviourToolkit
         {
             _rigidBody = GetComponent<Rigidbody>();
             Bounds = new UnitBounds(transform, _bounds);
+
+            if (Team && !ActiveUnitsPerTeam.ContainsKey(Team))
+                ActiveUnitsPerTeam[Team] = new List<RBTUnit>();
         }
 
         void Start()
@@ -134,12 +150,14 @@ namespace RtsBehaviourToolkit
         void OnEnable()
         {
             ActiveUnits.Add(this);
+            ActiveUnitsPerTeam[Team].Add(this);
             _onActivated.Invoke(new OnActivatedEvent(this));
         }
 
         void OnDisable()
         {
             ActiveUnits.Remove(this);
+            ActiveUnitsPerTeam[Team].Remove(this);
             _onDeactivated.Invoke(new OnDeActivatedEvent(this));
         }
 

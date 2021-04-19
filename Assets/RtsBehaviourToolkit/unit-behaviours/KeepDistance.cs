@@ -39,7 +39,12 @@ namespace RtsBehaviourToolkit
         // Public
         public override void OnUpdate(CommandGroup group)
         {
-            var followGroup = group as FollowGroup;
+            GameObject target = null;
+            if (group is FollowGroup)
+                target = (group as FollowGroup).Target;
+            else if (group is AttackGroup)
+                target = (group as AttackGroup).Target.GameObject;
+
             var commanderData = group.GetCustomData<CommonGroupData>();
 
             foreach (var unit in group.Units)
@@ -52,10 +57,10 @@ namespace RtsBehaviourToolkit
                     var distance = offset.magnitude;
                     var movement = CalcRepulsion(distance, maxDistance) * offset.normalized;
 
-                    if (followGroup)
+                    if (target)
                     {
                         var commander = commanderData.Commander;
-                        if (followGroup.Target == nu.GameObject && unit != commander)
+                        if (target == nu.GameObject && unit != commander)
                             unit.Unit.AddMovement(-movement);
                         else if (nu != commander.Unit || (nu == commander.Unit && commander.Unit.State.HasFlag(RBTUnit.ActionState.Idling)))
                             nu.AddMovement(movement);
