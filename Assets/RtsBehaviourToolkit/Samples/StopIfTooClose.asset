@@ -9,12 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c465d2cb5db52f74fb052d7c18c4d579, type: 3}
-  m_Name: KeepDistance
+  m_Script: {fileID: 11500000, guid: 50bd80cad77202042820f3c7662e0b5d, type: 3}
+  m_Name: StopIfTooClose
   m_EditorClassIdentifier: 
-  <Weight>k__BackingField: 10
-  <Tilt>k__BackingField: 0.5
-  _fov:
-    <Reach>k__BackingField: 1.5
-    <Fov>k__BackingField: 60
-  _drawGizmos: 1
+  <Bounds>k__BackingField: 1
+  _minFollowDistSingle: 2
+  _minFollowDistGroup: 2

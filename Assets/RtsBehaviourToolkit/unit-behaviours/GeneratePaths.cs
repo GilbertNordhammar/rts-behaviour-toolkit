@@ -72,7 +72,7 @@ namespace RtsBehaviourToolkit
                 EnsureNextNodeIsReachable(commander);
 
                 if (group.Units.Count > 0)
-                    SetPaths(commonData, group.Units);
+                    SetUnitPaths(commonData, group.Units);
 
                 for (int i = 1; i < group.Units.Count; i++)
                 {
@@ -93,7 +93,7 @@ namespace RtsBehaviourToolkit
         }
 
         // Private
-        void SetPaths(CommonGroupData data, IReadOnlyList<CommandUnit> units)
+        void SetUnitPaths(CommonGroupData data, IReadOnlyList<CommandUnit> units)
         {
             var commanderNodes = data.Commander.Paths.CurrentPath.Nodes;
             for (int i = 0; i < units.Count; i++)
@@ -103,42 +103,26 @@ namespace RtsBehaviourToolkit
                 var mag = data.OffsetsUnitToCenter[i].magnitude;
                 var dir = (units[i].Unit.Position - data.Center).normalized;
                 var posOffset = data.OffsetCommanderToCenter + dir * mag;
-                // var posOffset = data.OffsetCommanderToCenter - data.OffsetsUnitToCenter[i];
                 var nodes = new Vector3[commanderNodes.Length];
                 Array.Copy(commanderNodes, nodes, commanderNodes.Length);
                 for (int j = 0; j < nodes.Length; j++)
                     nodes[j] += posOffset;
-                // nodes[0] = units[i].Unit.Position;
                 units[i].Paths.ClearPaths();
                 units[i].Paths.CurrentPath = new Path(nodes);
             }
-
-            // var commanderNodes = data.Commander.Paths.CurrentPath.Nodes;
-            // for (int i = 0; i < units.Count; i++)
-            // {
-            //     if (i == data.CommanderIndex) continue;
-
-            //     var posOffset = data.OffsetCommanderToCenter - data.OffsetsUnitToCenter[i];
-            //     var nodes = new Vector3[commanderNodes.Length];
-            //     Array.Copy(commanderNodes, nodes, commanderNodes.Length);
-            //     for (int j = 0; j < nodes.Length; j++)
-            //         nodes[j] += posOffset;
-            //     units[i].Paths.ClearPaths();
-            //     units[i].Paths.CurrentPath = new Path(nodes);
-            // }
         }
 
         void SetCommanderPath(CommonGroupData data, Vector3 targetPos, bool targetIsUnit)
         {
             var commander = data.Commander;
             Vector3 offset;
-            if (data.OffsetCommanderToCenter == Vector3.zero && targetIsUnit)
-                offset = (targetPos - data.Commander.Unit.Position).normalized;
-            else
-                offset = data.OffsetCommanderToCenter;
+            // if (data.OffsetCommanderToCenter == Vector3.zero && targetIsUnit)
+            //     offset = (targetPos - data.Commander.Unit.Position).normalized;
+            // else
+            //     offset = data.OffsetCommanderToCenter;
+            offset = data.OffsetCommanderToCenter;
             var destination = targetPos - offset;
 
-            // var nodes = new Vector3[] { commander.Unit.Position, destination };
             var nodes = new Vector3[] { destination };
             commander.Paths.ClearPaths();
             commander.Paths.CurrentPath = new Path(nodes);

@@ -9,25 +9,21 @@ namespace RtsBehaviourToolkit
     [System.Serializable]
     public class StopIfTooClose : UnitBehaviour
     {
-        [field: SerializeField, Range(0, 5), Tooltip("Percentage of largest dimension of Unit.Bounds.Bounds")]
-        public float Bounds { get; private set; } = 1f;
+        [SerializeField, Min(0)]
+        float _minFollowDistance = 2;
 
-        float GetScale(Vector3 extents)
+        public override void OnUpdate(CommandGroup group)
         {
-            return extents.x > extents.z ? extents.x : extents.z;
-        }
+            var followGroup = group as FollowGroup;
 
-        public override void OnCommandGroupCreated(CommandGroup group)
-        {
-            var grid = RBTUnitBehaviourManager.UnitGrid;
-            var cathetus = Mathf.Sqrt(Mathf.Pow(Bounds, 2) / 2);
-
-            foreach (var unit in group.Units)
+            if (followGroup)
             {
-                var scale = GetScale(unit.Unit.Bounds.Extents);
-
-                var scaledCathetus = cathetus * scale;
-                var nearbyUnits = grid.FindNear(unit.Unit.Position, new Vector3(scaledCathetus, 0, scaledCathetus));
+                foreach (var unit in followGroup.Units)
+                {
+                    var sqrDist = (unit.Unit.transform.position - followGroup.Target.transform.position).sqrMagnitude;
+                    if (sqrDist < _minFollowDistance * _minFollowDistance)
+                        unit.Paths.ClearPaths();
+                }
             }
         }
     }
