@@ -27,6 +27,15 @@ namespace RtsBehaviourToolkit
         }
 
         public IAttackable Target { get; }
+
+        protected override void PreRemoveUnits(List<int> unitIndexes)
+        {
+            foreach (var i in unitIndexes)
+            {
+                if (_units[i].Unit.AttackTarget == Target)
+                    _units[i].Unit.AttackTarget = null;
+            }
+        }
     }
 
     public class FollowGroup : CommandGroup
@@ -115,6 +124,7 @@ namespace RtsBehaviourToolkit
 
             if (unitIndexesToRemove.Count > 0)
                 _onUnitsWillBeRemoved.Invoke(new OnUnitsRemove(unitIndexesToRemove.ToArray()));
+            PreRemoveUnits(unitIndexesToRemove);
 
             var nRemovedCounter = 0;
             foreach (var index in unitIndexesToRemove)
@@ -173,11 +183,10 @@ namespace RtsBehaviourToolkit
             return !object.ReferenceEquals(me, null);
         }
 
-        // Private
-        readonly Vector3 _commanderToCenterOffset;
-        List<CommandUnit> _units { get; } = new List<CommandUnit>();
-        List<object> _customDataObjects = new List<object>();
-
+        // Protected
+        protected virtual void PreRemoveUnits(List<int> unitIndexes) { }
+        protected List<CommandUnit> _units { get; } = new List<CommandUnit>();
+        protected List<object> _customDataObjects = new List<object>();
     }
 
     public class PathStack : IEnumerable<Path>

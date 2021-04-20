@@ -23,21 +23,22 @@ public class AnimationHandler : MonoBehaviour
             StopCoroutine(_attackLoop);
 
         var state = evnt.NewState;
-        if (state.HasFlag(RBTUnit.ActionState.Idling))
-        {
-            _animator.SetTrigger(AnimTrigger.Idle);
-            _animator.SetFloat(AnimVar.IdleMultiplier, 1.0f);
-        }
-        if (state.HasFlag(RBTUnit.ActionState.Moving))
-        {
-            _animator.SetTrigger(AnimTrigger.Walk);
-            _animator.SetFloat(AnimVar.WalkMultiplier, evnt.Sender.Speed);
-        }
         if (state.HasFlag(RBTUnit.ActionState.Attacking))
         {
             _attackLoop = AttackLoop(evnt.Sender.Attack);
             StartCoroutine(_attackLoop);
         }
+        else if (state.HasFlag(RBTUnit.ActionState.Moving))
+        {
+            _animator.SetTrigger(AnimTrigger.Walk);
+            _animator.SetFloat(AnimVar.WalkMultiplier, evnt.Sender.Speed);
+        }
+        else if (state.HasFlag(RBTUnit.ActionState.Idling))
+        {
+            _animator.SetTrigger(AnimTrigger.Idle);
+            _animator.SetFloat(AnimVar.IdleMultiplier, 1.0f);
+        }
+
     }
 
     IEnumerator AttackLoop(AttackInfo attack)

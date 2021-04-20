@@ -163,8 +163,8 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
-            UpdateLookDirection();
             UpdateState();
+            UpdateLookDirection();
         }
 
         void FixedUpdate()
