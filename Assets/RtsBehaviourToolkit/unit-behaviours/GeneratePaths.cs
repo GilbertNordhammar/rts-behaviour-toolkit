@@ -71,7 +71,7 @@ namespace RtsBehaviourToolkit
             {
                 if (unit.Paths.CurrentPath)
                 {
-                    var prevNext = unit.Paths.CurrentPath.PreviousNextNodeIndex;
+                    var prevNext = unit.Paths.CurrentPath.NextNodeIndexLastUpdate;
                     var next = unit.Paths.CurrentPath.NextNodeIndex;
                     if (prevNext != next)
                         EnsureNextNodeIsReachable(unit);

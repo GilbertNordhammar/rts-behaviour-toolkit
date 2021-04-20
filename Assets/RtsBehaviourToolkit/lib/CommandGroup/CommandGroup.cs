@@ -102,7 +102,7 @@ namespace RtsBehaviourToolkit
         {
             _units = new List<CommandUnit>(units);
 
-            foreach (var unit in Units)
+            foreach (var unit in _units)
                 unit.Unit.AssignCommandGroup(Id);
         }
 
@@ -116,7 +116,7 @@ namespace RtsBehaviourToolkit
                 {
                     _units[i].Paths.ClearRecentPaths();
                     if (_units[i].Paths.CurrentPath)
-                        _units[i].Paths.CurrentPath.UpdatePreviousNextNode();
+                        _units[i].Paths.CurrentPath.UpdateNextNodeLastUpdate();
                     _units[i].UpdatePaths();
                 }
                 else unitIndexesToRemove.Add(i);
@@ -129,14 +129,13 @@ namespace RtsBehaviourToolkit
             var nRemovedCounter = 0;
             foreach (var index in unitIndexesToRemove)
             {
-                if (_units.Count > 1)
-                {
-                    var i = index - nRemovedCounter;
-                    _units.RemoveAt(i);
-                    nRemovedCounter++;
-                }
-                else
-                    _units.RemoveAt(0);
+                int i = _units.Count > 1
+                    ? index - nRemovedCounter
+                    : 0;
+                if (_units[i].Unit.CommandGroupId == Id)
+                    _units[i].Unit.ClearCommandGroup();
+                _units.RemoveAt(i);
+                nRemovedCounter++;
             }
         }
 

@@ -26,17 +26,18 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public struct OnUnitsSelectedEvent
+        public class OnUnitsSelectedEvent
         {
             public OnUnitsSelectedEvent(RBTUnitSelector sender, List<RBTUnit> units, Team team)
             {
                 Sender = sender;
-                SelectedUnits = units;
+                SelectedUnits = new List<RBTUnit>(units);
                 Team = team;
             }
-            public readonly RBTUnitSelector Sender;
-            public readonly List<RBTUnit> SelectedUnits;
-            public readonly Team Team;
+
+            public RBTUnitSelector Sender { get; }
+            public List<RBTUnit> SelectedUnits { get; }
+            public Team Team { get; }
 
             public static implicit operator bool(OnUnitsSelectedEvent me)
             {
