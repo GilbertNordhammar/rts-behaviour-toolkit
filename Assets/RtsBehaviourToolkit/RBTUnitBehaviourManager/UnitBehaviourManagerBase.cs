@@ -67,7 +67,9 @@ namespace RtsBehaviourToolkit
             {
                 foreach (var entry in _behaviourEntries)
                 {
-                    if (entry.enabled)
+                    if (item.RemoveImmediately)
+                        break;
+                    else if (entry.enabled)
                         entry.behaviour.OnCommandGroupCreated(item);
                 }
             }
@@ -107,15 +109,20 @@ namespace RtsBehaviourToolkit
         // Private
         void UpdateCommandGroups()
         {
-            var commandGroupsToRemove = new List<CommandGroup>();
+            var groupsToRemove = new List<CommandGroup>();
             foreach (var commandGroup in _commandGroups)
             {
                 commandGroup.Update();
-                if (commandGroup.Units.Count == 0)
-                    commandGroupsToRemove.Add(commandGroup);
+                if (commandGroup.Units.Count == 0 || commandGroup.Remove)
+                    groupsToRemove.Add(commandGroup);
             }
 
-            foreach (var group in commandGroupsToRemove)
+            RemoveCommandGroups(groupsToRemove);
+        }
+
+        void RemoveCommandGroups(List<CommandGroup> groups)
+        {
+            foreach (var group in groups)
             {
                 foreach (var unit in group.Units)
                     unit.Unit.ClearCommandGroup();
@@ -154,14 +161,22 @@ namespace RtsBehaviourToolkit
         {
             UpdateCommandGroups();
 
+            var groupsToRemove = new List<CommandGroup>();
             foreach (var commandGroup in _commandGroups)
             {
                 foreach (var behaviourEntry in _behaviours)
                 {
-                    if (behaviourEntry.enabled)
+                    if (commandGroup.RemoveImmediately)
+                    {
+                        groupsToRemove.Add(commandGroup);
+                        break;
+                    }
+                    else if (behaviourEntry.enabled)
                         behaviourEntry.behaviour.OnUpdate(commandGroup);
                 }
             }
+
+            RemoveCommandGroups(groupsToRemove);
         }
 
         // Unity editor functions

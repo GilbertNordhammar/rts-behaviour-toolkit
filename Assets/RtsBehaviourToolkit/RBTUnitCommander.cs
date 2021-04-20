@@ -95,8 +95,6 @@ namespace RtsBehaviourToolkit
                         if (mayAttack)
                         {
                             mayFollow = false;
-                            foreach (var unit in units)
-                                unit.AttackTarget = attackable;
                             _unitBehaviourManager.CommandAttack(units, attackable);
                         }
                     }

@@ -38,6 +38,8 @@ namespace RtsBehaviourToolkit
 
         protected override List<AttackGroup> GenerateAttackGroups(List<RBTUnit> units, IAttackable target)
         {
+            foreach (var unit in units)
+                unit.AttackTarget = target;
             var proximityGroups = CalcProximityGroups(units);
             var attackGroups = new List<AttackGroup>();
             attackGroups.Capacity = proximityGroups.Count;

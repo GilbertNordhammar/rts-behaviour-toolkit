@@ -165,7 +165,8 @@ namespace RtsBehaviourToolkit
 
         public IReadOnlyList<CommandUnit> Units { get => _units; }
         public string Id { get; } = System.Guid.NewGuid().ToString();
-        List<object> _customDataObjects = new List<object>();
+        public bool Remove { get; set; }
+        public bool RemoveImmediately { get; set; }
 
         public static implicit operator bool(CommandGroup me)
         {
@@ -175,6 +176,8 @@ namespace RtsBehaviourToolkit
         // Private
         readonly Vector3 _commanderToCenterOffset;
         List<CommandUnit> _units { get; } = new List<CommandUnit>();
+        List<object> _customDataObjects = new List<object>();
+
     }
 
     public class PathStack : IEnumerable<Path>

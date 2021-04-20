@@ -1310,7 +1310,7 @@ PrefabInstance:
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
       propertyPath: _behaviours.Array.size
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
@@ -1351,25 +1351,36 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
+      propertyPath: _behaviours.Array.data[4].enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
       propertyPath: _behaviours.Array.data[0].behaviour
       value: 
-      objectReference: {fileID: 11400000, guid: 084992591b6220a4a87fcf7cab696be2,
+      objectReference: {fileID: 11400000, guid: 4ca332b4a1851a144b47ddc67a6d8e19,
         type: 2}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
       propertyPath: _behaviours.Array.data[1].behaviour
       value: 
-      objectReference: {fileID: 11400000, guid: d47606d93543929409cf71e48d3486f8,
+      objectReference: {fileID: 11400000, guid: 084992591b6220a4a87fcf7cab696be2,
         type: 2}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
       propertyPath: _behaviours.Array.data[2].behaviour
       value: 
-      objectReference: {fileID: 11400000, guid: 5ab4bf4b6c26a754ca54f2140d99baa0,
+      objectReference: {fileID: 11400000, guid: d47606d93543929409cf71e48d3486f8,
         type: 2}
     - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
         type: 3}
       propertyPath: _behaviours.Array.data[3].behaviour
+      value: 
+      objectReference: {fileID: 11400000, guid: 5ab4bf4b6c26a754ca54f2140d99baa0,
+        type: 2}
+    - target: {fileID: -3573399190706691050, guid: d38274ed187d7174aaf506de7d563bd2,
+        type: 3}
+      propertyPath: _behaviours.Array.data[4].behaviour
       value: 
       objectReference: {fileID: 11400000, guid: 012633e45a701f948a5bb5832a563ea1,
         type: 2}
