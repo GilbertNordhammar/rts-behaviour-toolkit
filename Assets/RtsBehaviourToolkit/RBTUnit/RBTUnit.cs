@@ -14,6 +14,12 @@ namespace RtsBehaviourToolkit
         [field: Min(0)]
         public float Speed { get; private set; } = 2.0f;
 
+        [SerializeField]
+        int _health = 5;
+
+        [SerializeField, Min(1)]
+        int _maxHealth = 5;
+
         [field: SerializeField]
         public AttackInfo Attack;
 
@@ -23,9 +29,40 @@ namespace RtsBehaviourToolkit
         [field: SerializeField]
         public Team Team { get; private set; }
 
-        public int Health { get; set; }
-        public int MaximumHealth { get; set; }
-        public bool Alive { get; }
+        [SerializeField]
+        bool _disablePhysicsOnDeath = true;
+
+        public int Health
+        {
+            get => _health;
+            set
+            {
+                if (value > _maxHealth)
+                    _health = _maxHealth;
+                else if (value < 0)
+                    _health = 0;
+                else
+                    _health = value;
+            }
+        }
+        public int MaximumHealth
+        {
+            get => _maxHealth;
+            set
+            {
+                if (value < 1)
+                {
+                    _maxHealth = 1;
+                    Debug.LogWarning("Can't set MaximumHealth to less than 1");
+                }
+                else
+                    _maxHealth = value;
+
+                if (_maxHealth < _health)
+                    _health = _maxHealth;
+            }
+        }
+        public bool Alive { get => _health > 0; }
         public Vector3 Position { get => _rigidBody.position; set => _rigidBody.position = value; }
         public GameObject GameObject { get => gameObject; }
         public Vector3 Velocity { get => _rigidBody.velocity; }
@@ -33,15 +70,15 @@ namespace RtsBehaviourToolkit
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
         public static Dictionary<Team, List<RBTUnit>> ActiveUnitsPerTeam { get; private set; } = new Dictionary<Team, List<RBTUnit>>();
         public UnitBounds Bounds { get; private set; }
-        public ActionState State
+        public UnitState State
         {
-            get => _actionState;
+            get => _unitState;
             private set
             {
-                var prevState = _actionState;
-                _actionState = value;
-                if (prevState != _actionState)
-                    _onStateChanged.Invoke(new OnStateChangedEvent(this, prevState, _actionState));
+                var prevState = _unitState;
+                _unitState = value;
+                if (prevState != _unitState)
+                    _onStateChanged.Invoke(new OnStateChangedEvent(this, prevState, _unitState));
             }
         }
         public IAttackable AttackTarget { get; set; }
@@ -80,22 +117,24 @@ namespace RtsBehaviourToolkit
             }
         }
 
-        public enum ActionState
+        public enum UnitState
         {
-            Idling = 1, Moving = 2, Attacking = 4
+            Idling = 1, Moving = 2, Attacking = 4, Dead = 8
         }
 
         // Private
         bool _selected = false;
         Rigidbody _rigidBody;
+        CapsuleCollider _collider;
         Vector3 _movementSum;
-        ActionState _actionState;
+        UnitState _unitState;
         bool _isOnGround = false;
+        IEnumerator _attackLoop;
 
         void UpdateLookDirection()
         {
             Vector3 lookDirection;
-            if (State.HasFlag(ActionState.Attacking))
+            if (State.HasFlag(UnitState.Attacking))
                 lookDirection = (AttackTarget.Position - Position).normalized;
             else
             {
@@ -110,36 +149,84 @@ namespace RtsBehaviourToolkit
 
         void UpdateState()
         {
-            var newState = ActionState.Idling;
+            if (_health == 0)
+            {
+                State = UnitState.Dead;
+                return;
+            }
+
+            var newState = UnitState.Idling;
 
             if (AttackTarget != null)
             {
                 var offset = AttackTarget.Position - Position;
                 var sqrDistXZ = new Vector3(offset.x, 0, offset.z).sqrMagnitude;
                 if (sqrDistXZ < Attack.Range * Attack.Range)
-                    newState |= ActionState.Attacking;
+                    newState |= UnitState.Attacking;
             }
             else
-                newState &= ~ActionState.Attacking;
+                newState &= ~UnitState.Attacking;
 
             if (_movementSum != Vector3.zero)
-                newState |= ActionState.Moving;
+                newState |= UnitState.Moving;
 
-            var notIdling = (newState & ~ActionState.Idling) > 0;
+            var notIdling = (newState & ~UnitState.Idling) > 0;
             if (notIdling)
-                newState &= ~ActionState.Idling;
+                newState &= ~UnitState.Idling;
 
             State = newState;
+        }
+
+        void DoAttack()
+        {
+            if (_attackLoop != null) return;
+
+            _attackLoop = AttackLoop();
+            StartCoroutine(_attackLoop);
+        }
+
+        void DontAttack()
+        {
+            if (_attackLoop == null) return;
+
+            StopCoroutine(_attackLoop);
+            _attackLoop = null;
+        }
+
+        IEnumerator AttackLoop()
+        {
+            while (State.HasFlag(UnitState.Attacking) && AttackTarget != null)
+            {
+                yield return new WaitForSeconds(Attack.TimePerAttack);
+                AttackTarget.Health -= Attack.Damage;
+            }
+        }
+
+        void TogglePhysics(bool enabled)
+        {
+            _rigidBody.isKinematic = !enabled;
+            _collider.enabled = enabled;
         }
 
         // Unity functions
         void Awake()
         {
             _rigidBody = GetComponent<Rigidbody>();
+            _collider = GetComponent<CapsuleCollider>();
             Bounds = new UnitBounds(transform, _bounds);
 
             if (Team && !ActiveUnitsPerTeam.ContainsKey(Team))
                 ActiveUnitsPerTeam[Team] = new List<RBTUnit>();
+
+            _onStateChanged += (evnt) =>
+            {
+                if (evnt.NewState.HasFlag(RBTUnit.UnitState.Dead))
+                {
+                    TogglePhysics(!_disablePhysicsOnDeath);
+                    Selected = false;
+                }
+                else TogglePhysics(true);
+            };
         }
 
         void Start()
@@ -165,6 +252,12 @@ namespace RtsBehaviourToolkit
         {
             UpdateState();
             UpdateLookDirection();
+
+            var mayAttack = State.HasFlag(UnitState.Attacking) && AttackTarget != null;
+            if (mayAttack)
+                DoAttack();
+            else
+                DontAttack();
         }
 
         void FixedUpdate()
@@ -209,6 +302,7 @@ namespace RtsBehaviourToolkit
         void OnValidate()
         {
             Bounds = new UnitBounds(transform, _bounds);
+            Health = _health;
         }
 
         void OnDrawGizmosSelected()

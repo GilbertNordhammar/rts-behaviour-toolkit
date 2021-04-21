@@ -101,6 +101,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <Speed>k__BackingField: 5
+  _health: 5
+  _maxHealth: 5
   Attack:
     <Damage>k__BackingField: 1
     <TimePerAttack>k__BackingField: 2
@@ -111,6 +113,7 @@ MonoBehaviour:
     m_Extent: {x: 0.47, y: 0.96, z: 0.37}
   <Team>k__BackingField: {fileID: 11400000, guid: d32fa8786f4f025429638d30e75fee4d,
     type: 2}
+  _disablePhysicsOnDeath: 1
 --- !u!114 &942705409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,7 +139,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3607b80c0798c4947a352881d0fac1ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _searchRadius: 2
+  _searchRadius: 5
 --- !u!1 &1068519158798810
 GameObject:
   m_ObjectHideFlags: 0

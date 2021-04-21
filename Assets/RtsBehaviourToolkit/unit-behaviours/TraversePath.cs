@@ -19,7 +19,7 @@ namespace RtsBehaviourToolkit
             foreach (var unit in group.Units)
             {
                 if (isGoTo)
-                    unit.Remove = !unit.Paths.CurrentPath;
+                    unit.Remove = unit.Remove || !unit.Paths.CurrentPath;
 
                 if (unit.Paths.CurrentPath && !unit.Paths.CurrentPath.Traversed && !unit.Remove)
                 {

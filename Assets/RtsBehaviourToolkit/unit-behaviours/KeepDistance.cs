@@ -53,6 +53,8 @@ namespace RtsBehaviourToolkit
                 var maxDistance = _fov.GetMaxDistance(unit.Unit);
                 foreach (var nu in unitsInFov)
                 {
+                    if (!nu.Alive || nu.Team != unit.Unit.Team) continue;
+
                     var offset = nu.transform.position - unit.Unit.Position;
                     var distance = offset.magnitude;
                     var movement = CalcRepulsion(distance, maxDistance) * offset.normalized;
@@ -62,7 +64,7 @@ namespace RtsBehaviourToolkit
                         var commander = commanderData.Commander;
                         if (target == nu.GameObject && unit != commander)
                             unit.Unit.AddMovement(-movement);
-                        else if (nu != commander.Unit || (nu == commander.Unit && commander.Unit.State.HasFlag(RBTUnit.ActionState.Idling)))
+                        else if (nu != commander.Unit || (nu == commander.Unit && commander.Unit.State.HasFlag(RBTUnit.UnitState.Idling)))
                             nu.AddMovement(movement);
                     }
                     else

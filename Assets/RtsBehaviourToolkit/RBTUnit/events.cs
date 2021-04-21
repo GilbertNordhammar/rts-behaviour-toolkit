@@ -138,14 +138,14 @@ namespace RtsBehaviourToolkit
 
         public class OnStateChangedEvent : UnitEvent
         {
-            public OnStateChangedEvent(RBTUnit sender, ActionState prevState, ActionState newState)
+            public OnStateChangedEvent(RBTUnit sender, UnitState prevState, UnitState newState)
                 : base(sender)
             {
                 PrevState = prevState;
                 NewState = newState;
             }
 
-            public readonly ActionState PrevState, NewState;
+            public readonly UnitState PrevState, NewState;
         }
 
         // Private

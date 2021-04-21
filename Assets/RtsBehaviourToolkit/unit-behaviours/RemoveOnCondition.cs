@@ -17,12 +17,17 @@ namespace RtsBehaviourToolkit
             else if (group is AttackGroup)
             {
                 var attackGroup = group as AttackGroup;
-                if (attackGroup.Target == null)
+                if (attackGroup.Target == null || !attackGroup.Target.Alive)
                 {
                     attackGroup.RemoveImmediately = true;
                     foreach (var unit in attackGroup.Units)
                         unit.Unit.AttackTarget = null;
                 }
+            }
+
+            foreach (var unit in group.Units)
+            {
+                unit.Remove = !unit.Unit.Alive;
             }
         }
     }

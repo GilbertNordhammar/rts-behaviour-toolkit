@@ -31,6 +31,8 @@ namespace RtsBehaviourToolkit
 
             foreach (var unit in RBTUnit.ActiveUnitsPerTeam[_selectableTeam])
             {
+                if (!unit.Alive) continue;
+
                 var pointOnScreen = Camera.main.WorldToScreenPoint(unit.Bounds.Center);
                 bool selected = selectBox.IsWithinBox(pointOnScreen);
                 foreach (var point in unit.Bounds.Corners)
@@ -62,7 +64,7 @@ namespace RtsBehaviourToolkit
             {
                 var clickedObject = clickHit.collider.gameObject;
                 var unit = clickedObject.GetComponent<RBTUnit>();
-                if (unit && unit.Team == _selectableTeam)
+                if (unit && unit.Team == _selectableTeam && unit.Alive)
                 {
                     _hasSelectedSingle = true;
                     _selectedUnits.Add(unit);

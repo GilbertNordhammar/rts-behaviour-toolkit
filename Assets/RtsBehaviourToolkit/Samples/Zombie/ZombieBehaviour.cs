@@ -8,12 +8,11 @@ using UnityEditor;
 
 namespace RtsBehaviourToolkit
 {
-    public class AttackNearbyOpponents : MonoBehaviour
+    public class ZombieBehaviour : MonoBehaviour
     {
         // Inspector and public
         [SerializeField, Min(0.1f)]
         float _searchRadius = 2;
-
 
         // Private
         RBTUnit _unit;
@@ -34,7 +33,7 @@ namespace RtsBehaviourToolkit
 
         void FixedUpdate()
         {
-            if (_unit.CommandGroupId != "")
+            if (_unit.CommandGroupId != "" || !_unit.Alive)
                 return;
 
             var nearbyUnits = RBTUnitBehaviourManager.UnitGrid.FindNear(_unit.Position, _searchBounds);
@@ -42,7 +41,7 @@ namespace RtsBehaviourToolkit
             foreach (var unit in nearbyUnits)
             {
                 var dist = (unit.Position - _unit.Position).sqrMagnitude;
-                if (dist < sqrRadius && unit.Team != _unit.Team)
+                if (dist < sqrRadius && unit.Team != _unit.Team && unit.Alive)
                 {
                     RBTUnitBehaviourManager.Instance.CommandAttack(new List<RBTUnit>() { _unit }, unit);
                     break;
@@ -59,7 +58,7 @@ namespace RtsBehaviourToolkit
         {
 #if UNITY_EDITOR
             var origColor = Handles.color;
-            Handles.color = new Color(1, 0, 0, 0.3f);
+            Handles.color = new Color(1, 0, 0, 0.1f);
             Handles.DrawSolidDisc(transform.position, Vector3.up, _searchRadius);
             Handles.color = origColor;
 #endif

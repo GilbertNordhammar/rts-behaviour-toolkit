@@ -18,22 +18,25 @@ public class AnimationHandler : MonoBehaviour
 
     void UpdateAnimationState(RBTUnit.OnStateChangedEvent evnt)
     {
-
         if (_attackLoop != null)
             StopCoroutine(_attackLoop);
 
         var state = evnt.NewState;
-        if (state.HasFlag(RBTUnit.ActionState.Attacking))
+        if (state.HasFlag(RBTUnit.UnitState.Dead))
+        {
+            _animator.SetTrigger(AnimTrigger.Die);
+        }
+        else if (state.HasFlag(RBTUnit.UnitState.Attacking))
         {
             _attackLoop = AttackLoop(evnt.Sender.Attack);
             StartCoroutine(_attackLoop);
         }
-        else if (state.HasFlag(RBTUnit.ActionState.Moving))
+        else if (state.HasFlag(RBTUnit.UnitState.Moving))
         {
             _animator.SetTrigger(AnimTrigger.Walk);
             _animator.SetFloat(AnimVar.WalkMultiplier, evnt.Sender.Speed);
         }
-        else if (state.HasFlag(RBTUnit.ActionState.Idling))
+        else if (state.HasFlag(RBTUnit.UnitState.Idling))
         {
             _animator.SetTrigger(AnimTrigger.Idle);
             _animator.SetFloat(AnimVar.IdleMultiplier, 1.0f);
@@ -51,8 +54,8 @@ public class AnimationHandler : MonoBehaviour
 
         while (true)
         {
-            _animator.SetTrigger(AnimTrigger.Attack);
             yield return new WaitForSeconds(attack.TimePerAttack);
+            _animator.SetTrigger(AnimTrigger.Attack);
         }
     }
 

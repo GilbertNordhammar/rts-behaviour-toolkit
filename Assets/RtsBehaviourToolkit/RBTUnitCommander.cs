@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -84,23 +85,23 @@ namespace RtsBehaviourToolkit
                 }
                 else if (isTargetable)
                 {
-                    StartCoroutine(Highlight(clickedObject));
+                    var mayFollow = true;
+                    var mayAttack = false;
 
                     var attackable = clickedObject.GetComponent<IAttackable>();
-                    var mayFollow = true;
-
                     if (attackable != null)
                     {
-                        var mayAttack = attackable.Team != _onUnitsSelectedEvent.Team;
-                        if (mayAttack)
-                        {
-                            mayFollow = false;
-                            _unitBehaviourManager.CommandAttack(units, attackable);
-                        }
+                        mayAttack = (attackable.Team != _onUnitsSelectedEvent.Team) && attackable.Alive;
+                        mayFollow = !mayAttack && attackable.Alive;
                     }
 
-                    if (mayFollow)
+                    if (mayAttack)
+                        _unitBehaviourManager.CommandAttack(units, attackable);
+                    else if (mayFollow)
                         _unitBehaviourManager.CommandFollow(units, clickedObject);
+
+                    if (mayFollow || mayAttack)
+                        StartCoroutine(Highlight(clickedObject));
                 }
             }
         }
@@ -111,12 +112,13 @@ namespace RtsBehaviourToolkit
             var unit = obj.GetComponent<RBTUnit>();
             if (unit)
             {
+                var origSelected = unit.Selected;
                 unit.Selected = true;
                 yield return new WaitForSecondsRealtime(0.3f);
                 unit.Selected = false;
+                yield return new WaitForSecondsRealtime(0.3f);
+                unit.Selected = origSelected;
             }
-
-            yield return null;
         }
 
         // Unity functions
@@ -150,7 +152,8 @@ namespace RtsBehaviourToolkit
         {
             if (Input.GetMouseButtonDown(1) && _onUnitsSelectedEvent)
             {
-                if (_onUnitsSelectedEvent.SelectedUnits.Count > 0)
+                var aliveSelected = _onUnitsSelectedEvent.SelectedUnits.Where(unit => unit.Alive).ToList();
+                if (aliveSelected.Count > 0)
                     CommandUnits(_onUnitsSelectedEvent.SelectedUnits);
             }
         }
