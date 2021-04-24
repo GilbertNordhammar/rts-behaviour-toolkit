@@ -106,7 +106,7 @@ MonoBehaviour:
   Attack:
     <Damage>k__BackingField: 1
     <TimePerAttack>k__BackingField: 2
-    <Range>k__BackingField: 1.2
+    <Range>k__BackingField: 3
     <DamageDelay>k__BackingField: 1
   _bounds:
     m_Center: {x: 0, y: 0.87, z: 0}

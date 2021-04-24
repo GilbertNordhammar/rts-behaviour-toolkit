@@ -113,12 +113,7 @@ namespace RtsBehaviourToolkit
             for (int i = 0; i < _units.Count; i++)
             {
                 if (_units[i].Unit.CommandGroupId == Id && !_units[i].Remove)
-                {
-                    _units[i].Paths.ClearRecentPaths();
-                    if (_units[i].Paths.CurrentPath)
-                        _units[i].Paths.CurrentPath.UpdateNextNodeLastUpdate();
                     _units[i].UpdatePaths();
-                }
                 else unitIndexesToRemove.Add(i);
             }
 
@@ -286,6 +281,10 @@ namespace RtsBehaviourToolkit
 
         public void UpdatePaths()
         {
+            Paths.ClearRecentPaths();
+            if (Paths.CurrentPath)
+                Paths.CurrentPath.UpdateNextNodeLastUpdate();
+
             if (Paths.Count > 0 && Paths.CurrentPath.Traversed)
                 Paths.PopPath();
             if (Paths.Count == 0) return;
