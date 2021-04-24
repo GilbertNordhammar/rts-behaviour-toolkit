@@ -17,8 +17,12 @@ namespace RtsBehaviourToolkit
             var commonData = new CommonGroupData();
             group.AddCustomData(commonData);
 
+            var rememberedPathStates = new RememberedPathStates(group.Units.Count);
+            group.AddCustomData(rememberedPathStates);
+
             group.OnUnitsWillBeRemoved += (evnt) =>
             {
+                rememberedPathStates.RemoveRange(evnt.UnitsIndices);
                 commonData.Reset();
             };
         }
@@ -30,7 +34,7 @@ namespace RtsBehaviourToolkit
             var commander = commonData.Commander;
 
             var targetPos = Vector3.zero;
-            var mayUpdatePaths = commonData.NewCommander;
+            var mayUpdatePaths = commonData.NewCommander && !commander.Paths.CurrentPath;
             IMovable movable = null;
             if (group is GoToGroup)
             {
@@ -60,23 +64,25 @@ namespace RtsBehaviourToolkit
 
                 if (group.Units.Count > 0)
                     SetUnitPaths(commonData, group.Units);
-
-                for (int i = 1; i < group.Units.Count; i++)
-                {
-                    EnsureNextNodeIsReachable(group.Units[i]);
-                }
             }
 
-            foreach (var unit in group.Units)
+            var rememberedPathStates = group.GetCustomData<RememberedPathStates>();
+            for (int i = 0; i < group.Units.Count; i++)
             {
-                if (unit.Paths.CurrentPath)
+                var unit = group.Units[i];
+                var currentPath = unit.Paths.CurrentPath;
+                if (currentPath && !currentPath.Traversed)
                 {
-                    var prevNext = unit.Paths.CurrentPath.NextNodeIndexLastUpdate;
-                    var next = unit.Paths.CurrentPath.NextNodeIndex;
-                    if (prevNext != next)
+                    var lastPathState = rememberedPathStates.LastPathState[i];
+                    if (currentPath.NextNodeIndex != lastPathState?.LastNextNodeIndex
+                        || currentPath != lastPathState?.LastCurrentPath)
+                    {
                         EnsureNextNodeIsReachable(unit);
+                    }
                 }
             }
+
+            rememberedPathStates.Update(group.Units);
         }
 
         // Private
@@ -104,7 +110,6 @@ namespace RtsBehaviourToolkit
             var commander = data.Commander;
             Vector3 offset = data.OffsetCommanderToCenter;
             var destination = targetPos - offset;
-
             var nodes = new Vector3[] { destination };
             commander.Paths.ClearPaths();
             commander.Paths.CurrentPath = new Path(nodes);
@@ -112,7 +117,6 @@ namespace RtsBehaviourToolkit
 
         void EnsureNextNodeIsReachable(CommandUnit unit)
         {
-            // TODO: Clean this up
             var navMeshMask = 1 << NavMesh.GetAreaFromName("Walkable");
             var foundNearbyPos = false;
             var preNextIndex = unit.Paths.CurrentPath.NextNodeIndex;
@@ -156,5 +160,61 @@ namespace RtsBehaviourToolkit
             }
         }
     }
+
+    public class RememberedPathStates
+    {
+        public RememberedPathStates(int nUnits)
+        {
+            LastPathState.Capacity = nUnits;
+            for (int n = 0; n < nUnits; n++)
+                LastPathState.Add(null);
+        }
+
+        public void Update(IReadOnlyList<CommandUnit> units)
+        {
+            for (int i = 0; i < units.Count; i++)
+            {
+                if (units[i].Paths.CurrentPath)
+                {
+                    if (LastPathState[i] != null)
+                        LastPathState[i].Update(units[i].Paths.CurrentPath);
+                    else
+                        LastPathState[i] = new PathState(units[i].Paths.CurrentPath);
+                }
+                else
+                    LastPathState[i] = null;
+            }
+        }
+
+        public void RemoveRange(int[] unitIndexes)
+        {
+            var nRemoved = 0;
+            foreach (var index in unitIndexes)
+            {
+                LastPathState.RemoveAt(index - nRemoved);
+                nRemoved++;
+            }
+        }
+
+        public List<PathState> LastPathState { get; } = new List<PathState>();
+    }
+
+    public class PathState
+    {
+        public PathState(Path currentPath)
+        {
+            Update(currentPath);
+        }
+
+        public void Update(Path currentPath)
+        {
+            LastCurrentPath = currentPath;
+            LastNextNodeIndex = currentPath.NextNodeIndex;
+        }
+
+        public int LastNextNodeIndex { get; private set; }
+        public Path LastCurrentPath { get; private set; }
+    }
+
 }
 

@@ -205,31 +205,37 @@ namespace RtsBehaviourToolkit
                 if (_debug.pathsDisplay == PathsDisplayMode.None) continue;
                 foreach (var commandUnit in group.Units)
                 {
-                    Gizmos.color = Color.red;
-                    var pLower = 0;
-                    var pUpper = commandUnit.Paths.Count;
-                    if (_debug.pathsDisplay == PathsDisplayMode.MainPath)
-                        pUpper = 1;
-                    else if (_debug.pathsDisplay == PathsDisplayMode.SubPaths)
+                    for (int i = 0; i < commandUnit.Paths.Count; i++)
                     {
-                        Gizmos.color = Color.blue;
-                        pLower = 1;
-                    }
-                    for (int p = pLower; p < pUpper; p++)
-                    {
-                        var path = commandUnit.Paths[p];
+                        if (i == 0 && _debug.pathsDisplay == PathsDisplayMode.SubPaths)
+                            continue;
+                        else if (i > 0 && _debug.pathsDisplay == PathsDisplayMode.MainPath)
+                            break;
+
+                        Gizmos.color = i == 0 ? Color.red : Color.blue;
+                        var path = commandUnit.Paths[i];
                         for (int n = path.PreviousNodeIndex; n < path.Nodes.Length; n++)
                         {
-                            var node1 = path.Nodes[n];
-                            Gizmos.DrawSphere(node1, 0.2f);
-                            if ((n + 1) < path.Nodes.Length)
+                            Vector3 node1, node2;
+                            if (n == path.PreviousNodeIndex)
                             {
-                                var node2 = path.Nodes[n + 1];
+                                node1 = commandUnit.Unit.Position;
+                                node2 = path.Nodes.Length > 1 && (n + 1) < path.Nodes.Length ? path.Nodes[n + 1] : path.Nodes[n];
                                 Gizmos.DrawSphere(node2, 0.2f);
                                 Gizmos.DrawLine(node1, node2);
                             }
+                            else
+                            {
+                                node1 = path.Nodes[n];
+                                if ((n + 1) < path.Nodes.Length)
+                                {
+                                    node2 = path.Nodes[n + 1];
+                                    Gizmos.DrawSphere(node2, 0.2f);
+                                    Gizmos.DrawLine(node1, node2);
+                                }
+                            }
+                            Gizmos.DrawSphere(node1, 0.2f);
                         }
-                        Gizmos.color = Color.blue;
                     }
                 }
             }

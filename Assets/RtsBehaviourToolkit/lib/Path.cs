@@ -42,15 +42,6 @@ namespace RtsBehaviourToolkit
             get => Mathf.Clamp(_indexIncrement - 1, 0, Nodes.Length - 1);
         }
 
-        public int NextNodeIndexLastUpdate { get; private set; } = 0;
-
-        public Vector3 NextNodeLastUpdate { get => Nodes[NextNodeIndexLastUpdate]; }
-
-        public void UpdateNextNodeLastUpdate()
-        {
-            NextNodeIndexLastUpdate = NextNodeIndex;
-        }
-
         public bool Traversed { get => _indexIncrement >= Nodes.Length; }
 
         public static implicit operator bool(Path me)

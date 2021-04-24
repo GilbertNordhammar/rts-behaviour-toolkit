@@ -112,9 +112,8 @@ namespace RtsBehaviourToolkit
 
             for (int i = 0; i < _units.Count; i++)
             {
-                if (_units[i].Unit.CommandGroupId == Id && !_units[i].Remove)
-                    _units[i].UpdatePaths();
-                else unitIndexesToRemove.Add(i);
+                if (_units[i].Unit.CommandGroupId != Id || _units[i].Remove)
+                    unitIndexesToRemove.Add(i);
             }
 
             if (unitIndexesToRemove.Count > 0)
@@ -124,9 +123,7 @@ namespace RtsBehaviourToolkit
             var nRemovedCounter = 0;
             foreach (var index in unitIndexesToRemove)
             {
-                int i = _units.Count > 1
-                    ? index - nRemovedCounter
-                    : 0;
+                int i = index - nRemovedCounter;
                 if (_units[i].Unit.CommandGroupId == Id)
                     _units[i].Unit.ClearCommandGroup();
                 _units.RemoveAt(i);
@@ -197,19 +194,12 @@ namespace RtsBehaviourToolkit
 
         public void PopPath()
         {
-            if (_paths.Count > 0)
-            {
-                _recentPaths.Add(_paths[_paths.Count - 1]);
-                _paths.RemoveAt(_paths.Count - 1);
-            }
+            _paths.RemoveAt(_paths.Count - 1);
         }
+
         public void ClearPaths()
         {
-            if (_paths.Count > 0)
-            {
-                _recentPaths.AddRange(_paths);
-                _paths.Clear();
-            }
+            _paths.Clear();
         }
 
         public Path CurrentPath
@@ -223,13 +213,6 @@ namespace RtsBehaviourToolkit
                     _paths.Add(value);
             }
         }
-
-        public void ClearRecentPaths()
-        {
-            _recentPaths.Clear();
-        }
-
-        public ReadOnlyCollection<Path> RecentPaths { get => _recentPaths.AsReadOnly(); }
 
         public int Count { get => _paths.Count; }
 
@@ -258,7 +241,6 @@ namespace RtsBehaviourToolkit
         }
 
         List<Path> _paths = new List<Path>();
-        List<Path> _recentPaths = new List<Path>();
     }
 
     [Serializable]
@@ -278,28 +260,6 @@ namespace RtsBehaviourToolkit
         public RBTUnit Unit { get; }
         public PathStack Paths { get; } = new PathStack();
         public bool Remove { get; set; }
-
-        public void UpdatePaths()
-        {
-            Paths.ClearRecentPaths();
-            if (Paths.CurrentPath)
-                Paths.CurrentPath.UpdateNextNodeLastUpdate();
-
-            if (Paths.Count > 0 && Paths.CurrentPath.Traversed)
-                Paths.PopPath();
-            if (Paths.Count == 0) return;
-
-            var sqrOffset = Paths.CurrentPath.NextNode - Unit.Position;
-            sqrOffset = Vector3.Scale(sqrOffset, sqrOffset);
-            var samePosXZ = sqrOffset.x < 0.01f && sqrOffset.z < 0.01f;
-            var sameAltitude = sqrOffset.y < 1.0; // TODO: Exchange 1.0 with unit height variable
-            var sqrStepSize = Mathf.Pow(Unit.Speed * Time.fixedDeltaTime, 2); // Is this the actual step size?
-            var sqrDistXZ = new Vector3(sqrOffset.x, 0, sqrOffset.z).sqrMagnitude;
-            var reachedNextNode = samePosXZ && sameAltitude || sqrDistXZ < sqrStepSize;
-
-            if (reachedNextNode)
-                Paths.CurrentPath.Increment();
-        }
 
         public int NextCornerIndex
         {
