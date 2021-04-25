@@ -1,17 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Profiling;
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace RtsBehaviourToolkit
 {
     [CreateAssetMenu(fileName = "KeepDistance", menuName = "RtsBehaviourToolkit/Behaviours/KeepDistance")]
     [System.Serializable]
-    public class KeepDistance : UnitBehaviour
+    public class PushAway : UnitBehaviour
     {
         // Inspector
         [field: SerializeField, Min(0)]
