@@ -9,9 +9,14 @@ namespace RtsBehaviourToolkit
     [System.Serializable]
     public class TraversePath : UnitBehaviour
     {
+        // Public and inspector
         [SerializeField]
         [Min(0f)]
         int _weight;
+
+        [SerializeField]
+        [Min(0f)]
+        float _allowedDistanceFromNode = 0.5f;
 
         public override void OnUpdate(CommandGroup group)
         {
@@ -31,6 +36,19 @@ namespace RtsBehaviourToolkit
             }
         }
 
+        // Private
+        float _sqrAllowedDistanceFromNode = 0.5f;
+
+        void Awake()
+        {
+            _sqrAllowedDistanceFromNode = _allowedDistanceFromNode * _allowedDistanceFromNode;
+        }
+
+        void OnValidate()
+        {
+            _sqrAllowedDistanceFromNode = _allowedDistanceFromNode * _allowedDistanceFromNode;
+        }
+
         void UpdatePaths(CommandUnit unit)
         {
             if (unit.Paths.Count > 0 && unit.Paths.CurrentPath.Traversed)
@@ -44,6 +62,11 @@ namespace RtsBehaviourToolkit
             var sqrStepSize = Mathf.Pow(unit.Unit.Speed * Time.fixedDeltaTime, 2); // Is this the actual step size?
             var sqrDistXZ = new Vector3(sqrOffset.x, 0, sqrOffset.z).sqrMagnitude;
             var reachedNextNode = samePosXZ && sameAltitude || sqrDistXZ < sqrStepSize;
+
+            var lastNode = unit.Paths.CurrentPath.NextNodeIndex == unit.Paths.CurrentPath.Nodes.Length - 1;
+            var lastPath = unit.Paths.Count == 1;
+            if (!(lastNode && lastPath))
+                reachedNextNode |= sqrDistXZ < _sqrAllowedDistanceFromNode;
 
             if (reachedNextNode)
                 unit.Paths.CurrentPath.Increment();

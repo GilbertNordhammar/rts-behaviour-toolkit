@@ -8,7 +8,7 @@ using UnityEditor;
 
 namespace RtsBehaviourToolkit
 {
-    public class ZombieBehaviour : MonoBehaviour
+    public class SoldierBehaviour : MonoBehaviour
     {
         // Inspector and public
         [SerializeField, Min(0.1f)]

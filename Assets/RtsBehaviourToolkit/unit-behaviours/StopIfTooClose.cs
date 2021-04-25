@@ -23,7 +23,10 @@ namespace RtsBehaviourToolkit
                 {
                     var sqrDist = (unit.Unit.transform.position - followGroup.Target.transform.position).sqrMagnitude;
                     if (sqrDist < _minFollowDistance * _minFollowDistance)
+                    {
+                        unit.Unit.AddMovement(-unit.Unit.MovementSum);
                         unit.Paths.ClearPaths();
+                    }
                 }
             }
             else if (attackGroup)
@@ -33,7 +36,10 @@ namespace RtsBehaviourToolkit
                     var attackRange = unit.Unit.Attack.Range;
                     var sqrDist = (unit.Unit.transform.position - attackGroup.Target.Position).sqrMagnitude;
                     if (sqrDist < attackRange * attackRange)
+                    {
+                        unit.Unit.AddMovement(-unit.Unit.MovementSum);
                         unit.Paths.ClearPaths();
+                    }
                 }
             }
         }

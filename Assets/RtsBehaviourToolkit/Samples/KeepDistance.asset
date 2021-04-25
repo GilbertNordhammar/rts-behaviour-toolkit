@@ -15,6 +15,6 @@ MonoBehaviour:
   <Weight>k__BackingField: 10
   <Tilt>k__BackingField: 0.5
   _fov:
-    <Reach>k__BackingField: 1.5
-    <Fov>k__BackingField: 60
+    <Reach>k__BackingField: 2
+    <Fov>k__BackingField: 70
   _drawGizmos: 1

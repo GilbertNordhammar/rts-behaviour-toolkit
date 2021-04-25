@@ -45,7 +45,7 @@ namespace RtsBehaviourToolkit
             else if (group is AttackGroup)
                 target = (group as AttackGroup).Target.GameObject;
 
-            var commanderData = group.GetCustomData<CommonGroupData>();
+            var groupData = group.GetCustomData<CommonGroupData>();
 
             foreach (var unit in group.Units)
             {
@@ -59,15 +59,8 @@ namespace RtsBehaviourToolkit
                     var distance = offset.magnitude;
                     var movement = CalcRepulsion(distance, maxDistance) * offset.normalized;
 
-                    if (target)
-                    {
-                        var commander = commanderData.Commander;
-                        if (target == nu.GameObject && unit != commander)
-                            unit.Unit.AddMovement(-movement);
-                        else if (nu != commander.Unit || (nu == commander.Unit && commander.Unit.State.HasFlag(RBTUnit.UnitState.Idling)))
-                            nu.AddMovement(movement);
-                    }
-                    else
+                    var commander = groupData.Commander;
+                    if (!(nu.gameObject == commander.Unit.gameObject || (target && nu.gameObject == target)))
                         nu.AddMovement(movement);
                 }
             }

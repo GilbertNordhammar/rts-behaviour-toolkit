@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: TraversePath
   m_EditorClassIdentifier: 
   _weight: 2
+  _allowedDistanceFromNode: 0.5

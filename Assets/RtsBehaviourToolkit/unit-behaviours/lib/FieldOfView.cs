@@ -71,8 +71,8 @@ namespace RtsBehaviourToolkit
             foreach (var unit in group.Units)
             {
                 var maxDistance = GetMaxDistance(unit.Unit);
-
-                var viewArcStartDirection = Quaternion.AngleAxis(-Fov / 2, Vector3.up) * unit.Unit.Velocity.normalized;
+                //TODO: unit.Unit.Velocity is 0 for some reason. Find out why and use it instead if possible 
+                var viewArcStartDirection = Quaternion.AngleAxis(-Fov / 2, Vector3.up) * unit.Unit.transform.forward;
                 Handles.DrawSolidArc(unit.Unit.Position, Vector3.up, viewArcStartDirection, Fov, maxDistance);
             }
             Handles.color = origColor;

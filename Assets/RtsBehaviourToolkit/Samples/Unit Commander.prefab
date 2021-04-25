@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 823510464419295196}
   - component: {fileID: 823510464419295187}
   - component: {fileID: 823510464419295197}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: Unit Commander
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -47,6 +47,7 @@ MonoBehaviour:
   _positionMarker: {fileID: 3159063026152156752, guid: 3926b76f3c682de4293dd2485fc045d5,
     type: 3}
   _markerDuration: 1
+  _unitCommander: {fileID: 823510464419295197}
 --- !u!114 &823510464419295197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -59,9 +60,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c6eb4b0ba448b245866e1eb3091df88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _walkable:
+  _unitBehaviourManager: {fileID: 0}
+  _targetable:
     serializedVersion: 2
-    m_Bits: 4096
-  _blockingTerrain:
-    serializedVersion: 2
-    m_Bits: 8192
+    m_Bits: 16384

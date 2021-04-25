@@ -12,6 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50bd80cad77202042820f3c7662e0b5d, type: 3}
   m_Name: StopIfTooClose
   m_EditorClassIdentifier: 
-  <Bounds>k__BackingField: 1
-  _minFollowDistSingle: 2
-  _minFollowDistGroup: 2
+  _minFollowDistance: 2

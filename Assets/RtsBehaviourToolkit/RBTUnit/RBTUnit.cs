@@ -66,6 +66,7 @@ namespace RtsBehaviourToolkit
         public Vector3 Position { get => _rigidBody.position; set => _rigidBody.position = value; }
         public GameObject GameObject { get => gameObject; }
         public Vector3 Velocity { get => _rigidBody.velocity; }
+        public Vector3 MovementSum { get => _movementSum; }
 
         public static List<RBTUnit> ActiveUnits { get; private set; } = new List<RBTUnit>();
         public static Dictionary<Team, List<RBTUnit>> ActiveUnitsPerTeam { get; private set; } = new Dictionary<Team, List<RBTUnit>>();
@@ -119,7 +120,7 @@ namespace RtsBehaviourToolkit
 
         public enum UnitState
         {
-            Idling = 1, Moving = 2, Attacking = 4, Dead = 8
+            Idling, Moving, Attacking, Dead
         }
 
         // Private
@@ -134,7 +135,7 @@ namespace RtsBehaviourToolkit
         void UpdateLookDirection()
         {
             Vector3 lookDirection;
-            if (State.HasFlag(UnitState.Attacking))
+            if (State == UnitState.Attacking)
                 lookDirection = (AttackTarget.Position - Position).normalized;
             else
             {
@@ -149,32 +150,44 @@ namespace RtsBehaviourToolkit
 
         void UpdateState()
         {
-            if (_health == 0)
-            {
-                State = UnitState.Dead;
-                return;
-            }
-
             var newState = UnitState.Idling;
-
-            if (AttackTarget != null)
+            if (_health == 0)
+                newState = UnitState.Dead;
+            else if (_movementSum != Vector3.zero)
+                newState = UnitState.Moving;
+            else if (AttackTarget != null)
             {
                 var offset = AttackTarget.Position - Position;
                 var sqrDistXZ = new Vector3(offset.x, 0, offset.z).sqrMagnitude;
                 if (sqrDistXZ < Attack.Range * Attack.Range)
-                    newState |= UnitState.Attacking;
+                    newState = UnitState.Attacking;
             }
-            else
-                newState &= ~UnitState.Attacking;
-
-            if (_movementSum != Vector3.zero)
-                newState |= UnitState.Moving;
-
-            var notIdling = (newState & ~UnitState.Idling) > 0;
-            if (notIdling)
-                newState &= ~UnitState.Idling;
 
             State = newState;
+            Debug.Log("State: " + State);
+        }
+
+        void UpdateMovementVelocity()
+        {
+            if (_movementSum == Vector3.zero)
+                return;
+
+            // Snapping unit to floor and setting surface normal
+            var surfaceNormal = Vector3.one;
+            RaycastHit hit = new RaycastHit();
+            if (Physics.Raycast(transform.position, -Vector3.up, out hit, 1, RBTConfig.WalkableMask))
+                surfaceNormal = hit.normal;
+
+            // Calculating adjusted movement (i.e. making it parallell to unit's up vector)
+            var movement = _movementSum.normalized;
+            var diffAngle = Vector3.Angle(surfaceNormal, movement) - 90f;
+            var right = Vector3.Cross(surfaceNormal, movement).normalized;
+            movement = Quaternion.AngleAxis(-diffAngle, right) * movement;
+            movement *= Speed;
+            _rigidBody.velocity = movement;
+
+            // reset movementSum until next update
+            _movementSum = Vector3.zero;
         }
 
         void DoAttack()
@@ -195,7 +208,7 @@ namespace RtsBehaviourToolkit
 
         IEnumerator AttackLoop()
         {
-            while (State.HasFlag(UnitState.Attacking) && AttackTarget != null)
+            while (State == UnitState.Attacking && AttackTarget != null)
             {
                 yield return new WaitForSeconds(Attack.TimePerAttack);
                 AttackTarget.Health -= Attack.Damage;
@@ -220,7 +233,7 @@ namespace RtsBehaviourToolkit
 
             _onStateChanged += (evnt) =>
             {
-                if (evnt.NewState.HasFlag(RBTUnit.UnitState.Dead))
+                if (evnt.NewState == RBTUnit.UnitState.Dead)
                 {
                     TogglePhysics(!_disablePhysicsOnDeath);
                     Selected = false;
@@ -253,7 +266,7 @@ namespace RtsBehaviourToolkit
             UpdateState();
             UpdateLookDirection();
 
-            var mayAttack = State.HasFlag(UnitState.Attacking) && AttackTarget != null;
+            var mayAttack = State == UnitState.Attacking && AttackTarget != null;
             if (mayAttack)
                 DoAttack();
             else
@@ -267,30 +280,8 @@ namespace RtsBehaviourToolkit
                 _rigidBody.isKinematic = false;
                 return;
             }
-
-            if (_movementSum == Vector3.zero)
-            {
-                _rigidBody.isKinematic = true;
-                return;
-            }
-            _rigidBody.isKinematic = false;
-
-            // Snapping unit to floor and setting surface normal
-            var surfaceNormal = Vector3.one;
-            RaycastHit hit = new RaycastHit();
-            if (Physics.Raycast(transform.position, -Vector3.up, out hit, 1, RBTConfig.WalkableMask))
-                surfaceNormal = hit.normal;
-
-            // Calculating adjusted movement (i.e. making it parallell to unit's up vector)
-            var movement = _movementSum.normalized;
-            var diffAngle = Vector3.Angle(surfaceNormal, movement) - 90f;
-            var right = Vector3.Cross(surfaceNormal, movement).normalized;
-            movement = Quaternion.AngleAxis(-diffAngle, right) * movement;
-            movement *= Speed;
-            _rigidBody.velocity = movement;
-
-            // reset movement until next update
-            _movementSum = Vector3.zero;
+            _rigidBody.isKinematic = _movementSum == Vector3.zero;
+            UpdateMovementVelocity();
         }
 
         void OnCollisionEnter(Collision other)
