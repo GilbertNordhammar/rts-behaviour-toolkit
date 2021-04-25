@@ -33,7 +33,12 @@ namespace RtsBehaviourToolkit
 
         protected override List<PatrolGroup> GeneratePatrolGroups(List<RBTUnit> units, Vector3 destination)
         {
-            throw new NotImplementedException();
+            var proximityGroups = CalcProximityGroups(units);
+            var patrolGroups = new List<PatrolGroup>();
+            patrolGroups.Capacity = proximityGroups.Count;
+            foreach (var group in proximityGroups)
+                patrolGroups.Add(new PatrolGroup(group, destination));
+            return patrolGroups;
         }
 
         protected override List<AttackGroup> GenerateAttackGroups(List<RBTUnit> units, IAttackable target)

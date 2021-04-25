@@ -20,6 +20,16 @@ namespace RtsBehaviourToolkit
             var rememberedPathStates = new RememberedPathStates(group.Units.Count);
             group.AddCustomData(rememberedPathStates);
 
+            if (group is PatrolGroup)
+            {
+                var data = new PatrolData(group.Units);
+                group.AddCustomData(data);
+                group.OnUnitsWillBeRemoved += (evnt) =>
+                {
+                    data.RemoveRange(evnt.UnitsIndices);
+                };
+            }
+
             group.OnUnitsWillBeRemoved += (evnt) =>
             {
                 rememberedPathStates.RemoveRange(evnt.UnitsIndices);
@@ -36,6 +46,8 @@ namespace RtsBehaviourToolkit
             var targetPos = Vector3.zero;
             var mayUpdatePaths = commonData.NewCommander && !commander.Paths.CurrentPath;
             IMovable movable = null;
+            PatrolData patrolData = null;
+            PatrolGroup patrolGroup = null;
             if (group is GoToGroup)
             {
                 var goToGroup = group as GoToGroup;
@@ -52,6 +64,15 @@ namespace RtsBehaviourToolkit
                 var attackGroup = group as AttackGroup;
                 targetPos = attackGroup.Target.Position;
                 movable = attackGroup.Target.GameObject.GetComponent<IMovable>();
+            }
+            else if (group is PatrolGroup)
+            {
+                patrolGroup = group as PatrolGroup;
+                targetPos = patrolGroup.Destination;
+                patrolData = patrolGroup.GetCustomData<PatrolData>(false);
+                mayUpdatePaths = !patrolData.HasGeneratedPaths;
+                if (!patrolData.HasGeneratedPaths)
+                    patrolData.HasGeneratedPaths = true;
             }
 
             if (movable != null)
@@ -79,6 +100,13 @@ namespace RtsBehaviourToolkit
                     {
                         EnsureNextNodeIsReachable(unit);
                     }
+                }
+                else if (patrolGroup && !currentPath)
+                {
+                    var reversedPath = new Path(new Vector3[] { patrolData.SourcePosition[i] });
+                    patrolData.SourcePosition[i] = unit.Unit.Position;
+                    unit.Paths.PushPath(reversedPath);
+                    EnsureNextNodeIsReachable(unit);
                 }
             }
 
@@ -159,6 +187,27 @@ namespace RtsBehaviourToolkit
                 }
             }
         }
+    }
+
+    public class PatrolData
+    {
+        public PatrolData(IReadOnlyList<CommandUnit> units)
+        {
+            SourcePosition = units.Select(unit => unit.Unit.Position).ToList();
+        }
+
+        public void RemoveRange(int[] unitIndexes)
+        {
+            var nRemoved = 0;
+            foreach (var index in unitIndexes)
+            {
+                SourcePosition.RemoveAt(index - nRemoved);
+                nRemoved++;
+            }
+        }
+
+        public List<Vector3> SourcePosition { get; } = new List<Vector3>();
+        public bool HasGeneratedPaths = false;
     }
 
     public class RememberedPathStates

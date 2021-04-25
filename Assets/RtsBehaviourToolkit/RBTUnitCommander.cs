@@ -16,6 +16,9 @@ namespace RtsBehaviourToolkit
         [SerializeField]
         LayerMask _targetable;
 
+        [SerializeField]
+        KeyCode _patrolModiferKey = KeyCode.P;
+
         // Public
         public static RBTUnitCommander Instance { get; private set; }
 
@@ -79,7 +82,10 @@ namespace RtsBehaviourToolkit
                     var walkablePos = NavMesh.SamplePosition(clickHit.point, out navMeshHit, 1f, walkableMask);
                     if (walkablePos)
                     {
-                        _unitBehaviourManager.CommandGoTo(units, clickHit.point);
+                        if (Input.GetKey(_patrolModiferKey))
+                            _unitBehaviourManager.CommandPatrol(units, clickHit.point);
+                        else
+                            _unitBehaviourManager.CommandGoTo(units, clickHit.point);
                         _onCommandGiven.Invoke(new CommandGivenEvent(this, clickHit.point, units));
                     }
                 }
