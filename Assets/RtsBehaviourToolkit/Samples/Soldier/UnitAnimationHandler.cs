@@ -24,8 +24,6 @@ public class UnitAnimationHandler : MonoBehaviour
         if (_attackLoop != null)
             StopCoroutine(_attackLoop);
 
-        // Debug.Log($"old: {evnt.PrevState}, new: {evnt.NewState}");
-
         var state = evnt.NewState;
         switch (state)
         {
@@ -37,12 +35,10 @@ public class UnitAnimationHandler : MonoBehaviour
                 StartCoroutine(_attackLoop);
                 break;
             case RBTUnit.UnitState.Moving:
-                // Debug.Log("move");
                 _animator.SetTrigger(AnimTrigger.Walk);
                 _animator.SetFloat(AnimVar.WalkMultiplier, evnt.Sender.Speed * _baseWalkMultipler);
                 break;
             case RBTUnit.UnitState.Idling:
-                // Debug.Log("idle");
                 _animator.SetTrigger(AnimTrigger.Idle);
                 _animator.SetFloat(AnimVar.IdleMultiplier, 1.0f);
                 break;

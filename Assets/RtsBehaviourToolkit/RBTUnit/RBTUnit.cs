@@ -135,7 +135,7 @@ namespace RtsBehaviourToolkit
         void UpdateLookDirection()
         {
             Vector3 lookDirection;
-            if (State == UnitState.Attacking)
+            if (State == UnitState.Attacking && AttackTarget != null)
                 lookDirection = (AttackTarget.Position - Position).normalized;
             else
             {
@@ -153,7 +153,7 @@ namespace RtsBehaviourToolkit
             var newState = UnitState.Idling;
             if (_health == 0)
                 newState = UnitState.Dead;
-            else if (_movementSum != Vector3.zero)
+            else if (_rigidBody.velocity != Vector3.zero)
                 newState = UnitState.Moving;
             else if (AttackTarget != null)
             {
@@ -164,7 +164,6 @@ namespace RtsBehaviourToolkit
             }
 
             State = newState;
-            Debug.Log("State: " + State);
         }
 
         void UpdateMovementVelocity()
@@ -263,7 +262,6 @@ namespace RtsBehaviourToolkit
 
         void Update()
         {
-            UpdateState();
             UpdateLookDirection();
 
             var mayAttack = State == UnitState.Attacking && AttackTarget != null;
@@ -282,6 +280,7 @@ namespace RtsBehaviourToolkit
             }
             _rigidBody.isKinematic = _movementSum == Vector3.zero;
             UpdateMovementVelocity();
+            UpdateState();
         }
 
         void OnCollisionEnter(Collision other)
